@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "Tabbed plot extension for matplotlib using the Qt backend"
 dependencies = [
   "matplotlib >= 3.7.0",
-  "PyQt5 >= 5.15.0",
+   "PyQt6 >= 6.9.0"
 ]
 readme = "README.md"
 license = "BSD-3-Clause"
@@ -49,7 +49,7 @@ omit = [
 [tool.hatch.dependencies]
 request = [
    "matplotlib >= 3.7.0",
-   "PyQt5 >= 5.15.0"
+   "PyQt6 >= 6.9.0"
 ]
 
 #[tool.coverage.paths]
