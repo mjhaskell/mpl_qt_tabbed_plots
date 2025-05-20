@@ -4,7 +4,7 @@ import sys
 import time
 
 # Qt imports
-from PyQt6 import QtWidgets, QtGui
+from PySide6 import QtWidgets, QtGui
 
 # matplotlib imports
 import matplotlib
@@ -84,8 +84,8 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         self._resizeFigure(figure)
         new_canvas = FigureCanvas(figure)
         new_toolbar = NavigationToolbar(new_canvas, new_tab)
-        layout.addWidget(new_canvas) # type: ignore
-        layout.addWidget(new_toolbar) # type: ignore
+        layout.addWidget(new_canvas)
+        layout.addWidget(new_toolbar)
 
         self.tabs.addTab(new_tab, tab_title)
 
