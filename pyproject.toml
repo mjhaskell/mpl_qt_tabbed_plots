@@ -46,6 +46,12 @@ omit = [
   "src/mpl_qt_tabbed_plots/__about__.py",
 ]
 
+[tool.hatch.dependencies]
+request = [
+   "matplotlib >= 3.7.0",
+   "PyQt5 >= 5.15.0"
+]
+
 #[tool.coverage.paths]
 #mpl_qt_tabbed_plots = ["src/mpl_qt_tabbed_plots", "*/mpl-qt-tabbed-plots/src/mpl_qt_tabbed_plots"]
 #tests = ["tests", "*/mpl-qt-tabbed-plots/tests"]
