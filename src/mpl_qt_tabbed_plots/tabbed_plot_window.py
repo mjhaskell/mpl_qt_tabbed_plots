@@ -31,9 +31,11 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
     """
     app = QtWidgets.QApplication(sys.argv)
     windows = []
+    win_ids = []
+    figures = {}
     count = 0
 
-    def __init__(self, window_title: str = 'Plot Window',
+    def __init__(self, win_id: int|None = None, window_title: str = 'Plot Window',
                  size: tuple[int,int] = (1280, 900), open_window: bool = False):
         """
         Creates a new tabbed plot window with the given title and size. The
@@ -47,7 +49,13 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
                 immediately after creation. Otherwise, it will be hidden until
                 another method is called to show it. Default is False.
         """
+        if win_id in TabbedPlotWindow.win_ids:
+            self = TabbedPlotWindow.windows[TabbedPlotWindow.win_ids.index(win_id)]
+            return
+        if win_id is None:
+            win_id = max(TabbedPlotWindow.win_ids, default=0) + 1
         super().__init__()
+        self.id = win_id
         self.setWindowTitle(window_title)
         self.resize(*size)
         self.canvases: list[FigureCanvas] = []
@@ -61,7 +69,9 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         if open_window:
             self.show()
         TabbedPlotWindow.windows.append(self)
+        TabbedPlotWindow.win_ids.append(self.id)
         TabbedPlotWindow.count += 1
+        # self.figs: list[Figure] = []
         # Allow Ctrl+C to kill without errors
         signal.signal(signal.SIGINT, lambda sig,frame: sys.exit(0))
 
@@ -76,6 +86,9 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
             tab_title (str): The title of the tab.
             figure (Figure): The matplotlib figure to be displayed in the tab.
         """
+        if figure.number in TabbedPlotWindow.figures.keys():
+            return
+
         new_tab = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout()
         new_tab.setLayout(layout)
@@ -93,6 +106,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         # self.toolbar_handles.append(new_toolbar)
         self.canvases.append(new_canvas)
         self.figure_handles.append(figure)
+        TabbedPlotWindow.figures[figure.number] = figure
         # self.tab_handles.append(new_tab)
 
         if plt.isinteractive():
@@ -141,7 +155,13 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         """
         event.accept()
         super().closeEvent(event)
+        for figure in self.figure_handles:
+            num = figure.number
+            TabbedPlotWindow.figures.pop(num)
+        # idx = TabbedPlotWindow.windows.index(self)
         TabbedPlotWindow.windows.remove(self)
+        TabbedPlotWindow.win_ids.remove(self.id)
+        # TabbedPlotWindow.windows.pop(self.id)
         TabbedPlotWindow.count -= 1
         if TabbedPlotWindow.count == 0:
             self.app.quit()

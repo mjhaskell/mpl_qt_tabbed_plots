@@ -4,8 +4,8 @@ from mpl_qt_tabbed_plots import TabbedPlotWindow
 
 
 def test_tabbed_plot_window():
-    window1 = TabbedPlotWindow(window_title='Plot Window 1', open_window=True)
-    window2 = TabbedPlotWindow(size=(500,400), open_window=True)
+    window1 = TabbedPlotWindow(1,window_title='Plot Window 1', open_window=True)
+    window2 = TabbedPlotWindow(2,size=(500,400), open_window=True)
 
     # data
     t = np.arange(0, 10, 0.001)
@@ -13,7 +13,7 @@ def test_tabbed_plot_window():
     ycos = np.cos(t)
 
 
-    f = plt.figure(layout='tight')
+    f = plt.figure(1, layout='tight')
     ax = f.add_subplot()
     line1, = ax.plot(t, ysin, '--')
     ax.set_xlabel('time')
@@ -21,7 +21,7 @@ def test_tabbed_plot_window():
     ax.set_title('Plot of sin(t)')
     window1.addTab("sin", f)
 
-    f = plt.figure()
+    f = plt.figure(2)
     ax = f.add_subplot()
     ax.plot(t, t)
     ax.set_xlabel('time')
@@ -29,7 +29,7 @@ def test_tabbed_plot_window():
     ax.set_title('Plot of t')
     window1.addTab("time", f)
 
-    f = plt.figure()
+    f = plt.figure(3)
     ax = f.add_subplot()
     line2, = ax.plot(t, ycos, '--')
     ax.set_xlabel('time')
@@ -37,7 +37,7 @@ def test_tabbed_plot_window():
     ax.set_title('Plot of cos(t)')
     window2.addTab("cos", f)
 
-    f = plt.figure()
+    f = plt.figure(5)
     ax = f.add_subplot()
     ax.plot(t, t)
     ax.set_xlabel('time')
@@ -58,3 +58,6 @@ def test_tabbed_plot_window():
 
     TabbedPlotWindow.show_all(block=False)
 
+
+if __name__ == "__main__":
+    test_tabbed_plot_window()
