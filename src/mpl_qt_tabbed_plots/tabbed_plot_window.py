@@ -62,7 +62,8 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
             self.show()
         TabbedPlotWindow.windows.append(self)
         TabbedPlotWindow.count += 1
-        signal.signal(signal.SIGINT, signal.SIG_DFL)  # Allow Ctrl+C to kill without errors
+        # Allow Ctrl+C to kill without errors
+        signal.signal(signal.SIGINT, lambda sig,frame: sys.exit(0))
 
     def addTab(self, tab_title: str, figure: Figure) -> None:
     # def addTab(self, tab_title: str, figure: Figure|None) -> Figure:
