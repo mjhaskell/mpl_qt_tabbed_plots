@@ -50,10 +50,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         super().__init__()
         self.setWindowTitle(window_title)
         self.resize(*size)
-        self.canvases: list[FigureCanvas] = []
         self.figure_handles: list[Figure] = []
-        self.toolbar_handles: list[NavigationToolbar] = []
-        self.tab_handles: list[QtWidgets.QWidget] = []
         self.tabs = QtWidgets.QTabWidget()
         self.tabs.setTabBarAutoHide(True)
         self.tabs.setMovable(True)
@@ -90,10 +87,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
 
         self.tabs.addTab(new_tab, tab_title)
 
-        # self.toolbar_handles.append(new_toolbar)
-        self.canvases.append(new_canvas)
         self.figure_handles.append(figure)
-        # self.tab_handles.append(new_tab)
 
         if plt.isinteractive():
             print("Closing detected pyplot figure window because interactive mode is on.")
@@ -129,9 +123,10 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         if not self.isVisible():
             self.show()
         active_tab = self.tabs.currentIndex()
-        canvas = self.canvases[active_tab]
-        canvas.draw()
-        canvas.flush_events()
+        fig = self.figure_handles[active_tab]
+        if fig.stale:
+            fig.canvas.draw_idle()
+            fig.canvas.flush_events()
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """
@@ -154,8 +149,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         for i,fig in enumerate(self.figure_handles):
             self.tabs.setCurrentIndex(i) # tab has to be active to apply tight layout
             fig.tight_layout()
-            canvas = self.canvases[i]
-            canvas.draw()
+            fig.canvas.draw_idle()
         self.tabs.setCurrentIndex(current_index)
 
     @staticmethod
@@ -210,9 +204,4 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         if TabbedPlotWindow.count > 0:
             remaining_delay = max(delay_seconds - update_time, 0.0)
             time.sleep(remaining_delay)
-
-        # open_windows = [w for w in QApplication.topLevelWidgets() if w.isVisible()]
-        # if len(open_windows) == 0:
-        #     print("No open windows. Exiting...")
-        #     sys.exit(0)
         return update_time
