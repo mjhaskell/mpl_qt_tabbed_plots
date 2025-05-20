@@ -1,0 +1,1 @@
+from .tabbed_plot_window import TabbedPlotWindow

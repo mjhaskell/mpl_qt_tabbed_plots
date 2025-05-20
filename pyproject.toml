@@ -1,0 +1,54 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mpl_qt_tabbed_plots"
+dynamic = ["version"]
+description = "Tabbed plot extension for matplotlib using the Qt backend"
+dependencies = [
+  "matplotlib >= 3.7.0",
+  "PyQt5 >= 5.15.0",
+]
+readme = "README.md"
+license = "BSD-3-Clause"
+license-files = ["LICEN[CS]E*"]
+requires-python = ">=3.10"
+authors = [
+  { name="Mat Haskell", email="mhaskell9@gmail.com" },
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+]
+keywords = [
+    "matplotlib",
+    "qt",
+    "tabbed", "tabs",
+    "plot", "plots",
+    "visualization",
+]
+
+[project.urls]
+Homepage = "https://github.com/mjhaskell/mpl_qt_tabbed_plots"
+Repository = "https://github.com/mjhaskell/mpl_qt_tabbed_plots.git"
+Issues = "https://github.com/mjhaskell/mpl_qt_tabbed_plots/issues"
+
+[tool.hatch.version]
+path = "src/mpl_qt_tabbed_plots/__about__.py"
+
+[tool.coverage.run]
+source_pkgs = ["mpl_qt_tabbed_plots", "tests"]
+branch = true
+parallel = true
+omit = [
+  "src/mpl_qt_tabbed_plots/__about__.py",
+]
+
+#[tool.coverage.paths]
+#mpl_qt_tabbed_plots = ["src/mpl_qt_tabbed_plots", "*/mpl-qt-tabbed-plots/src/mpl_qt_tabbed_plots"]
+#tests = ["tests", "*/mpl-qt-tabbed-plots/tests"]
+
+#[tool.hatch.build.targets.wheel]
+#packages = ["src"]
