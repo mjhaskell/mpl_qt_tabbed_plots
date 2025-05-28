@@ -5,8 +5,6 @@ import time
 
 from matplotlib.figure import Figure
 from matplotlib.backends.qt_compat import QtWidgets, QtGui
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt import NavigationToolbar2QT as NavigationToolbar
 
 # Fix plot font types to work in paper sumbissions (Don't use type 3 fonts)
 import matplotlib
@@ -14,6 +12,7 @@ matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
 
 from .figure_widget import FigureWidget
+from .tabbed_figure_widget import TabbedFigureWidget
 
 # if sys.modules.get('IPython') is not None:
 try:
@@ -66,10 +65,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         super().__init__()
         self.setWindowTitle(window_title)
         self.resize(*size)
-        self.figure_handles: list[Figure] = []
-        self.tabs = QtWidgets.QTabWidget()
-        self.tabs.setTabBarAutoHide(True)
-        self.tabs.setMovable(True)
+        self.tabs = TabbedFigureWidget()
         self.setCentralWidget(self.tabs)
         if open_window:
             self.show()
@@ -85,15 +81,15 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
 
         Args:
             tab_title (str): The title of the tab.
+            blit (bool): If True, enables blitting for faster rendering on the
+                Figure in this tab. Default is False.
+            include_toolbar (bool): If True, includes a navigation toolbar
+                with the Figure in this tab. Default is True.
         Returns:
             figure (Figure): The matplotlib figure to be displayed in the tab.
         """
-        new_tab = FigureWidget(blit, include_toolbar)
-
-        self.tabs.addTab(new_tab, tab_title)
-
-        self.figure_handles.append(new_tab.figure)
-        return new_tab.figure
+        figure = self.tabs.addFigureTab(tab_title, blit, include_toolbar)
+        return figure
 
     def _resizeFigure(self, figure: Figure) -> None:
         """
@@ -106,10 +102,10 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         width = self.width() / figure.dpi
         height = self.height() / figure.dpi
         figure.set_size_inches(width, height)
-        layout_engine = figure.get_layout_engine()
-        if layout_engine is None:
-            layout_engine = 'tight'
-        figure.set_layout_engine(layout_engine)
+        # layout_engine = figure.get_layout_engine()
+        # if layout_engine is None:
+        #     layout_engine = 'tight'
+        # figure.set_layout_engine(layout_engine)
 
         # figure.canvas.draw()
 
@@ -123,10 +119,9 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         if not self.isVisible():
             self.show()
         active_tab = self.tabs.currentIndex()
-        fig = self.figure_handles[active_tab]
-        if fig.stale:
-            fig.canvas.draw_idle()
-            fig.canvas.flush_events()
+        active_widget = self.tabs.widget(active_tab)
+        if isinstance(active_widget, FigureWidget):
+            active_widget.update_figure()
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """
@@ -146,10 +141,14 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         Applies a tight layout to the figure in each tab of the window.
         """
         current_index = self.tabs.currentIndex()
-        for i,fig in enumerate(self.figure_handles):
+        for i in range(self.tabs.count()):
+            tab = self.tabs.widget(i)
+            if not isinstance(tab, FigureWidget):
+                continue
             self.tabs.setCurrentIndex(i) # tab has to be active to apply tight layout
-            fig.tight_layout()
-            fig.canvas.draw_idle()
+            tab.update_figure()
+            tab.figure.tight_layout()
+            tab.canvas.draw_idle()
         self.tabs.setCurrentIndex(current_index)
 
     @staticmethod
