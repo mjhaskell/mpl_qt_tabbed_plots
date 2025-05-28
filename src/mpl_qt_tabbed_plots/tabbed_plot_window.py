@@ -13,6 +13,8 @@ import matplotlib
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
 
+from .figure_widget import FigureWidget
+
 # if sys.modules.get('IPython') is not None:
 try:
     from IPython.core.getipython import get_ipython
@@ -74,7 +76,8 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         TabbedPlotWindow.windows.append(self)
         TabbedPlotWindow.count += 1
 
-    def addTab(self, tab_title: str) -> Figure:
+    def addTab(self, tab_title: str, blit: bool = False,
+               include_toolbar: bool = True) -> Figure:
         """
         Adds a new tab to the window with the given title and figure. The figure
         should be a matplotlib figure object. Window properties, such as size,
@@ -85,21 +88,12 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         Returns:
             figure (Figure): The matplotlib figure to be displayed in the tab.
         """
-        new_tab = QtWidgets.QWidget()
-        layout = QtWidgets.QVBoxLayout()
-        new_tab.setLayout(layout)
-
-        figure = Figure()
-        self._resizeFigure(figure)
-        new_canvas = FigureCanvas(figure)
-        new_toolbar = NavigationToolbar(new_canvas, new_tab)
-        layout.addWidget(new_canvas)
-        layout.addWidget(new_toolbar)
+        new_tab = FigureWidget(blit, include_toolbar)
 
         self.tabs.addTab(new_tab, tab_title)
 
-        self.figure_handles.append(figure)
-        return figure
+        self.figure_handles.append(new_tab.figure)
+        return new_tab.figure
 
     def _resizeFigure(self, figure: Figure) -> None:
         """
