@@ -2,6 +2,10 @@
 import signal
 import sys
 import time
+if sys.version_info < (3, 11):
+    from typing_extensions import Self
+else:
+    from typing import Self
 
 from matplotlib.figure import Figure
 from matplotlib.backends.qt_compat import QtWidgets, QtGui
@@ -45,11 +49,44 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
     by this class.
     """
     app = QtWidgets.QApplication(sys.argv)
-    windows = []
+    _registry: dict[str, Self] = {}
+    _latest_id = None
+    # _all_windows: list[Self] = []
+    # _all_ids: list[str] = []
     count = 0
 
-    def __init__(self, window_title: str = 'Plot Window',
-                 size: tuple[int,int] = (1280, 900), open_window: bool = False):
+    def __new__(cls, window_id: str|int|None = None,
+                size: tuple[int,int] = (1280, 900),
+                open_window: bool = False):
+        if window_id is None:
+            # Generate a unique identifier if none is provided
+            id_ = str(len(cls._registry) + 1)
+            # id_ = str(len(cls._all_ids) + 1)
+            while id_ in cls._registry:
+            # while id_ in cls._all_ids:
+                id_ = str(int(id_) + 1)
+        else:
+            id_ = str(window_id)
+
+        # Return existing instance if it exists
+        if id_ in cls._registry:
+            return cls._registry[id_]
+        # if id_ in cls._all_ids:
+        #     index = cls._all_ids.index(id_)
+        #     return cls._all_windows[index]
+
+        # Create a new instance if it does not exist
+        instance = super().__new__(cls)
+        cls._registry[id_] = instance
+        cls._latest_id = id_
+        # cls._all_windows.append(instance)
+        # cls._all_ids.append(id_)
+        cls.count += 1
+        return instance
+
+    def __init__(self, window_id: str|int|None = None,
+                 size: tuple[int,int] = (1280, 900),
+                 open_window: bool = False):
         """
         Creates a new tabbed plot window with the given title and size. The
         window will be displayed immediately after creation.
@@ -62,15 +99,17 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
                 immediately after creation. Otherwise, it will be hidden until
                 another method is called to show it. Default is False.
         """
+        if hasattr(self, 'id'):
+            return
         super().__init__()
-        self.setWindowTitle(window_title)
+        self.id = str(self._latest_id)
+        # self.id = str(TabbedPlotWindow._all_ids[-1])
+        self.setWindowTitle(f'Plot Window: {self.id}')
         self.resize(*size)
         self.tabs = TabbedFigureWidget()
         self.setCentralWidget(self.tabs)
         if open_window:
             self.show()
-        TabbedPlotWindow.windows.append(self)
-        TabbedPlotWindow.count += 1
 
     def addTab(self, tab_title: str, blit: bool = False,
                include_toolbar: bool = True) -> Figure:
@@ -131,7 +170,9 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         """
         event.accept()
         super().closeEvent(event)
-        TabbedPlotWindow.windows.remove(self)
+        # TabbedPlotWindow._all_windows.remove(self)
+        # TabbedPlotWindow._all_ids.remove(self.id)
+        del TabbedPlotWindow._registry[self.id]
         TabbedPlotWindow.count -= 1
         if TabbedPlotWindow.count == 0:
             self.app.quit()
@@ -166,12 +207,15 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
                 are closed. If False, the function will return immediately after
                 showing the windows.
         """
-        for window in TabbedPlotWindow.windows:
-            win: TabbedPlotWindow = window # satisfy LSP
-            if not win.isVisible():
-                win.show()
+        for key in list(TabbedPlotWindow._registry.keys()):
+            if not key in TabbedPlotWindow._registry:
+                continue # in case window was closed during iteration
+            window = TabbedPlotWindow._registry[key]
+        # for window in TabbedPlotWindow._all_windows:
+            if not window.isVisible():
+                window.show()
             if tight_layout:
-                win.applyTightLayout()
+                window.applyTightLayout()
         if not block:
             return
         if TabbedPlotWindow.count > 0 and TabbedPlotWindow.app is not None:
@@ -199,9 +243,12 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
                 for the remaining time before returning.
         """
         start = time.perf_counter()
-        for window in TabbedPlotWindow.windows:
-            win: TabbedPlotWindow = window # satisfy LSP
-            win.update()
+        for key in list(TabbedPlotWindow._registry.keys()):
+            if not key in TabbedPlotWindow._registry:
+                continue # in case window was closed during iteration
+            window = TabbedPlotWindow._registry[key]
+        # for window in TabbedPlotWindow._all_windows:
+            window.update()
         update_time = time.perf_counter() - start
         if TabbedPlotWindow.count > 0:
             remaining_delay = max(delay_seconds - update_time, 0.0)
