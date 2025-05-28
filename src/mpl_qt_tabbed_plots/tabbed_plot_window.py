@@ -182,7 +182,10 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         if not block:
             return
         if TabbedPlotWindow.count > 0 and TabbedPlotWindow.app is not None:
-            TabbedPlotWindow.app.exec()
+            try:
+                TabbedPlotWindow.app.exec()
+            except:
+                TabbedPlotWindow.app.exec_() # for compatibility with Qt5
 
     @staticmethod
     def update_all(delay_seconds: float) -> float:
