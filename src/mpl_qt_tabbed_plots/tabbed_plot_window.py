@@ -12,8 +12,6 @@ from matplotlib.backends.backend_qt import NavigationToolbar2QT as NavigationToo
 import matplotlib
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
-import matplotlib.pyplot as plt
-plt.ioff()
 
 # if sys.modules.get('IPython') is not None:
 try:
@@ -76,8 +74,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         TabbedPlotWindow.windows.append(self)
         TabbedPlotWindow.count += 1
 
-    def addTab(self, tab_title: str, figure: Figure) -> None:
-    # def addTab(self, tab_title: str, figure: Figure|None) -> Figure:
+    def addTab(self, tab_title: str) -> Figure:
         """
         Adds a new tab to the window with the given title and figure. The figure
         should be a matplotlib figure object. Window properties, such as size,
@@ -85,14 +82,14 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
 
         Args:
             tab_title (str): The title of the tab.
+        Returns:
             figure (Figure): The matplotlib figure to be displayed in the tab.
         """
         new_tab = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout()
         new_tab.setLayout(layout)
 
-        # if figure is None:
-        #     figure = Figure()
+        figure = Figure()
         self._resizeFigure(figure)
         new_canvas = FigureCanvas(figure)
         new_toolbar = NavigationToolbar(new_canvas, new_tab)
@@ -102,12 +99,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         self.tabs.addTab(new_tab, tab_title)
 
         self.figure_handles.append(figure)
-
-        if plt.isinteractive():
-            print("Closing detected pyplot figure window because interactive mode is on.")
-            plt.close(figure) # plt will open separate windows for each figure
-
-        # return figure
+        return figure
 
     def _resizeFigure(self, figure: Figure) -> None:
         """
