@@ -3,23 +3,39 @@ import signal
 import sys
 import time
 
-# Qt imports
-from PySide6 import QtWidgets, QtGui
-
-# matplotlib imports
-import matplotlib
-# Fix plot font types to work in paper sumbissions (Don't use type 3 fonts)
-matplotlib.rcParams['pdf.fonttype'] = 42
-matplotlib.rcParams['ps.fonttype'] = 42
-# prevent NoneType error for versions of matplotlib 3.1.0rc1+ by calling matplotlib.use()
-# For more on why it's nececessary, see
-# https://stackoverflow.com/questions/59656632/using-qt5agg-backend-with-matplotlib-3-1-2-get-backend-changes-behavior
-matplotlib.use('qtagg')
 from matplotlib.figure import Figure
+from matplotlib.backends.qt_compat import QtWidgets, QtGui
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt import NavigationToolbar2QT as NavigationToolbar
+
+# Fix plot font types to work in paper sumbissions (Don't use type 3 fonts)
+import matplotlib
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
 import matplotlib.pyplot as plt
 plt.ioff()
+
+# if sys.modules.get('IPython') is not None:
+try:
+    from IPython.core.getipython import get_ipython
+    from IPython.utils.capture import capture_output
+    _in_ipython = get_ipython()
+except ImportError:
+    _in_ipython = None
+
+if _in_ipython:
+    with capture_output() as captured: # suppress output
+        # register IPython event loop to Qt - prevents need to call app.exec()
+        _in_ipython.run_line_magic('gui', 'qt')
+
+    # SIGINT handles ctrl+c. The following lines allow it to kill without errors.
+    # Using sys.exit(0) in IPython stops script execution, but not the kernel.
+    signal.signal(signal.SIGINT, lambda sig, frame: sys.exit(0))
+else:
+    # Use SIG_DFL (default) rather than letting Qt handle ctrl+c.
+    # Qt throws a KeyboardInterrupt exception, but only when the mouse hovers
+    # over the window or some other Qt action causes events to process.
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 class TabbedPlotWindow(QtWidgets.QMainWindow):
@@ -59,8 +75,6 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
             self.show()
         TabbedPlotWindow.windows.append(self)
         TabbedPlotWindow.count += 1
-        # Allow Ctrl+C to kill without errors
-        signal.signal(signal.SIGINT, lambda sig,frame: sys.exit(0))
 
     def addTab(self, tab_title: str, figure: Figure) -> None:
     # def addTab(self, tab_title: str, figure: Figure|None) -> Figure:
