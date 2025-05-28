@@ -196,11 +196,11 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
                 the windows. If less than delay_seconds, the function will wait
                 for the remaining time before returning.
         """
-        start = time.time()
+        start = time.perf_counter()
         for window in TabbedPlotWindow.windows:
             win: TabbedPlotWindow = window # satisfy LSP
             win.update()
-        update_time = time.time() - start
+        update_time = time.perf_counter() - start
         if TabbedPlotWindow.count > 0:
             remaining_delay = max(delay_seconds - update_time, 0.0)
             time.sleep(remaining_delay)
