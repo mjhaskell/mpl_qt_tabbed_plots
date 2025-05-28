@@ -44,16 +44,12 @@ else:
 class TabbedPlotWindow(QtWidgets.QMainWindow):
     """
     A class to create a tabbed plot window where the tabs are matplotlib
-    figures. When using this class, DO NOT USE plt.show() or plt.pause() as they
-    will cause issues with the plot window. Instead, use the methods provided
-    by this class.
+    figures.
     """
-    app = QtWidgets.QApplication(sys.argv)
+    _app = QtWidgets.QApplication(sys.argv)
     _registry: dict[str, Self] = {}
     _latest_id = None
-    # _all_windows: list[Self] = []
-    # _all_ids: list[str] = []
-    count = 0
+    _count = 0
 
     def __new__(cls, window_id: str|int|None = None,
                 size: tuple[int,int] = (1280, 900),
@@ -61,49 +57,42 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         if window_id is None:
             # Generate a unique identifier if none is provided
             id_ = str(len(cls._registry) + 1)
-            # id_ = str(len(cls._all_ids) + 1)
             while id_ in cls._registry:
-            # while id_ in cls._all_ids:
                 id_ = str(int(id_) + 1)
         else:
             id_ = str(window_id)
 
-        # Return existing instance if it exists
+        # Return instance if it exists
         if id_ in cls._registry:
             return cls._registry[id_]
-        # if id_ in cls._all_ids:
-        #     index = cls._all_ids.index(id_)
-        #     return cls._all_windows[index]
 
         # Create a new instance if it does not exist
         instance = super().__new__(cls)
         cls._registry[id_] = instance
         cls._latest_id = id_
-        # cls._all_windows.append(instance)
-        # cls._all_ids.append(id_)
-        cls.count += 1
+        cls._count += 1
         return instance
 
     def __init__(self, window_id: str|int|None = None,
                  size: tuple[int,int] = (1280, 900),
-                 open_window: bool = False):
+                 open_window: bool = True):
         """
-        Creates a new tabbed plot window with the given title and size. The
-        window will be displayed immediately after creation.
+        Creates a new tabbed plot window with the given ID and size. If a window
+        with the same ID already exists, it will return that instance instead of
+        creating a new one.
 
         Args:
-            window_title (str): The title of the window.
-            size (tuple[int,int]): The size of the window in pixels. Default is
-                (1280, 900).
+            window_id (str|int|None): The ID of the window. If None, a unique ID
+                will be created based on the number of existing windows.
+            size (tuple[int,int]): The size of the window in pixels.
             open_window (bool): If True, the window will be displayed
                 immediately after creation. Otherwise, it will be hidden until
-                another method is called to show it. Default is False.
+                another method is called to show it.
         """
         if hasattr(self, 'id'):
             return
         super().__init__()
         self.id = str(self._latest_id)
-        # self.id = str(TabbedPlotWindow._all_ids[-1])
         self.setWindowTitle(f'Plot Window: {self.id}')
         self.resize(*size)
         self.tabs = TabbedFigureWidget()
@@ -111,47 +100,28 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         if open_window:
             self.show()
 
-    def addTab(self, tab_title: str, blit: bool = False,
+    def add_figure_tab(self, tab_id: str, blit: bool = False,
                include_toolbar: bool = True) -> Figure:
         """
-        Adds a new tab to the window with the given title and figure. The figure
-        should be a matplotlib figure object. Window properties, such as size,
-        will be determined by this class rather than the figure itself.
+        Adds a new tab to the window with the given ID and returns the Figure
+        created for that tab. If a tab with the same ID already exists, the
+        existing Figure will be returned instead of creating a new one.
 
         Args:
-            tab_title (str): The title of the tab.
-            blit (bool): If True, enables blitting for faster rendering on the
-                Figure in this tab. Default is False.
-            include_toolbar (bool): If True, includes a navigation toolbar
-                with the Figure in this tab. Default is True.
+            tab_id (str): The ID of the tab.
+            blit (bool): Whether blitting will be used with the Figure in this tab.
+            include_toolbar (bool): Whether to include a matplotlib toolbar
+                with the Figure in this tab.
         Returns:
-            figure (Figure): The matplotlib figure to be displayed in the tab.
+            figure (Figure): The matplotlib figure in this tab.
         """
-        figure = self.tabs.addFigureTab(tab_title, blit, include_toolbar)
+        figure = self.tabs.add_figure_tab(tab_id, blit, include_toolbar)
         return figure
-
-    def _resizeFigure(self, figure: Figure) -> None:
-        """
-        Resizes the figure to fit the window size. This is called when the
-        window is resized.
-
-        Args:
-            figure (Figure): The matplotlib figure to be resized.
-        """
-        width = self.width() / figure.dpi
-        height = self.height() / figure.dpi
-        figure.set_size_inches(width, height)
-        # layout_engine = figure.get_layout_engine()
-        # if layout_engine is None:
-        #     layout_engine = 'tight'
-        # figure.set_layout_engine(layout_engine)
-
-        # figure.canvas.draw()
 
     def update(self) -> None:
         """
-        This will draw data updates for the figure on the active tab. Similar to
-        plt.pause(), but for the current tab on this window. No additional time
+        This will update the figure on the active (visible) tab. Similar to
+        pyplot.pause(), but for the current tab on this window. No additional time
         delay is added to the function, so it will return immediately after
         updating the figure.
         """
@@ -164,22 +134,24 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """
+        Qt event function - DO NOT CALL DIRECTLY.
+
         This method is called when the window is closed. It will remove the
         window from the list of windows and check if there are any other windows
         open. If not, it will exit the application.
         """
         event.accept()
         super().closeEvent(event)
-        # TabbedPlotWindow._all_windows.remove(self)
-        # TabbedPlotWindow._all_ids.remove(self.id)
         del TabbedPlotWindow._registry[self.id]
-        TabbedPlotWindow.count -= 1
-        if TabbedPlotWindow.count == 0:
-            self.app.quit()
+        TabbedPlotWindow._count -= 1
+        if TabbedPlotWindow._count == 0:
+            self._app.quit()
 
-    def applyTightLayout(self):
+    def apply_tight_layout(self):
         """
-        Applies a tight layout to the figure in each tab of the window.
+        Applies a tight layout to the figure in each tab of the window, even if
+        they are not the active Figure. Same as calling figure.tight_layout()
+        directly on each Figure.
         """
         current_index = self.tabs.currentIndex()
         for i in range(self.tabs.count()):
@@ -195,10 +167,9 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
     @staticmethod
     def show_all(tight_layout: bool = True, block: bool = True) -> None:
         """
-        Shows all open windows. Each window will stay open until individually
+        Shows all created windows. Each window will stay open until individually
         closed or else <ctrl+c> is pressed in the terminal that launched the
-        application. This is a replacement for plt.show()...plt.show() should
-        not be used with this class as it will cause issues.
+        application.
 
         Args:
             tight_layout (bool): If True, apply tight layout to all figures
@@ -211,25 +182,22 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
             if not key in TabbedPlotWindow._registry:
                 continue # in case window was closed during iteration
             window = TabbedPlotWindow._registry[key]
-        # for window in TabbedPlotWindow._all_windows:
             if not window.isVisible():
                 window.show()
             if tight_layout:
-                window.applyTightLayout()
+                window.apply_tight_layout()
         if not block:
             return
-        if TabbedPlotWindow.count > 0 and TabbedPlotWindow.app is not None:
+        if TabbedPlotWindow._count > 0 and TabbedPlotWindow._app is not None:
             try:
-                TabbedPlotWindow.app.exec()
+                TabbedPlotWindow._app.exec()
             except:
-                TabbedPlotWindow.app.exec_() # for compatibility with Qt5
+                TabbedPlotWindow._app.exec_() # for compatibility with Qt5
 
     @staticmethod
     def update_all(delay_seconds: float) -> float:
         """
-        Updates all open windows. This is a replacement for plt.pause() and
-        should be used when the plot data is changing over time. If not, use
-        show_all() instead.
+        Updates all created windows. This is similar to pyplot.pause().
 
         Args:
             delay_seconds (float): The amount of time to wait before returning,
@@ -247,10 +215,9 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
             if not key in TabbedPlotWindow._registry:
                 continue # in case window was closed during iteration
             window = TabbedPlotWindow._registry[key]
-        # for window in TabbedPlotWindow._all_windows:
             window.update()
         update_time = time.perf_counter() - start
-        if TabbedPlotWindow.count > 0:
+        if TabbedPlotWindow._count > 0:
             remaining_delay = max(delay_seconds - update_time, 0.0)
             time.sleep(remaining_delay)
         return update_time

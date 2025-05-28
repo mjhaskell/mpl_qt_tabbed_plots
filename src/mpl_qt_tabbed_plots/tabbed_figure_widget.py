@@ -16,7 +16,7 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
         super().__init__()
         self.figure_wigets: dict[str, FigureWidget] = {}
 
-    def addFigureTab(self, identifier: str|int, blit: bool = False,
+    def add_figure_tab(self, identifier: str|int, blit: bool = False,
                      include_toolbar: bool = True) -> Figure:
         """
         Adds a new tab to the widget with the given title/identifier, which
