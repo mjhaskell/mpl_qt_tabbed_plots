@@ -133,6 +133,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
                     raise ValueError(f'Can not have {r} columns. Must be at least 1.')
                 widget_row = QtWidgets.QWidget()
                 hlayout = QtWidgets.QHBoxLayout(widget_row)
+                hlayout.setContentsMargins(0, 0, 0, 0)
                 row = []
                 for c in range(r):
                     widget = TabbedFigureWidget()
@@ -151,6 +152,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
                     raise ValueError(f'Can not have {c} columns. Must be at least 1.')
                 widget_col = QtWidgets.QWidget()
                 vlayout = QtWidgets.QVBoxLayout(widget_col)
+                vlayout.setContentsMargins(0, 0, 0, 0)
                 col = []
                 for r in range(c):
                     widget = TabbedFigureWidget()
@@ -158,6 +160,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
                     vlayout.addWidget(widget)
                 tab_groups.append(col)
                 main_layout.addWidget(widget_col)
+        main_layout.setContentsMargins(0, 0, 0, 0)
         self.tab_groups = TabGroupContainer(tab_groups, row_major)
 
         if open_window:
