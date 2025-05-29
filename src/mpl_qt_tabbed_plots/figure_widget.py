@@ -22,6 +22,8 @@ class FigureWidget(QtWidgets.QWidget):
         super().__init__(parent)
         self.blit = blit
         layout = QtWidgets.QVBoxLayout()
+        layout.setSpacing(0)
+        layout.setContentsMargins(0, 0, 0, 0)
         self.canvas = FigureCanvas()
         self.figure = self.canvas.figure
         # self.figure.set_layout_engine('tight') # slows down rendering ~2x
@@ -30,6 +32,7 @@ class FigureWidget(QtWidgets.QWidget):
 
         if include_toolbar:
             toolbar = NavigationToolbar(self.canvas, self)
+            toolbar.setMaximumHeight(25)
             layout.addWidget(toolbar)
 
         self.setLayout(layout)

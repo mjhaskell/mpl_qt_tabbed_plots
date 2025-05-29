@@ -1,5 +1,5 @@
 from matplotlib.figure import Figure
-from matplotlib.backends.qt_compat import QtWidgets
+from matplotlib.backends.qt_compat import QtWidgets, QtGui
 
 from .figure_widget import FigureWidget
 
@@ -14,6 +14,9 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
         Initializes the TabbedFigureWidget.
         """
         super().__init__()
+        tabbar = self.tabBar()
+        tabbar.setFont(QtGui.QFont('Arial', 8))
+        tabbar.setContentsMargins(0, 0, 0, 0)
         self.figure_wigets: dict[str, FigureWidget] = {}
 
     def add_figure_tab(self, identifier: str|int, blit: bool = False,
