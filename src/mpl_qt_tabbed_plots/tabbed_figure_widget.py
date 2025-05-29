@@ -21,23 +21,23 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
         tabbar.setContentsMargins(0, 0, 0, 0)
         self.figure_wigets: dict[str, FigureWidget] = {}
 
-    def add_figure_tab(self, identifier: str|int, blit: bool = False,
-                     include_toolbar: bool = True) -> Figure:
+    def add_figure_tab(self, tab_id: str|int, blit: bool = False,
+                       include_toolbar: bool = True) -> Figure:
         """
-        Adds a new tab to the widget with the given title/identifier, which
+        Adds a new tab to the widget with the given title/tab_id, which
         creates and returns a matplotlib Figure. Tabs are displayed in the
         order they are added.
 
         Args:
-            identifier (str|int): The title of the tab. If the identifier already
+            tab_id (str|int): The title/ID of the tab. If the tab ID already
                 exists, the existing Figure from that tab will be returned.
             blit (bool): If True, enables blitting for faster rendering on the
                 Figure in this tab.
             include_toolbar (bool): If True, includes a navigation toolbar
-                with the Figure in this tab. Default is True.
+                with the Figure in this tab.
         """
         new_tab = FigureWidget(blit, include_toolbar)
-        id_ = str(identifier)
+        id_ = str(tab_id)
         if id_ in self.figure_wigets:
             return self.figure_wigets[id_].figure
         self.figure_wigets[id_] = new_tab
