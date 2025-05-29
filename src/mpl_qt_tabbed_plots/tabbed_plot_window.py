@@ -1,6 +1,7 @@
 # system imports
 import signal
 import sys
+import os
 import time
 if sys.version_info < (3, 11):
     from typing_extensions import Self
@@ -106,6 +107,8 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         self.id = str(self._latest_id)
         self.setWindowTitle(f'Plot Window: {self.id}')
         self.resize(*size)
+        img = os.path.join(os.path.dirname(__file__), 'abra.svg')
+        self.setWindowIcon(QtGui.QIcon(img))
         main_widget = QtWidgets.QWidget()
         self.setCentralWidget(main_widget)
 
