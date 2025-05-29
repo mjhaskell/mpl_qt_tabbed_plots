@@ -7,8 +7,7 @@ name = "mpl_qt_tabbed_plots"
 dynamic = ["version"]
 description = "Tabbed plot extension for matplotlib using the Qt backend"
 dependencies = [
-  "matplotlib >= 3.7.0",
-  "PySide6 >= 6.9.0"
+  "matplotlib"
 ]
 readme = "README.md"
 license = "BSD-3-Clause"
@@ -29,6 +28,18 @@ keywords = [
     "plot", "plots",
     "visualization",
 ]
+
+[project.optional-dependencies]
+qt-pyqt6 = ["PyQt6"]
+qt-pyside6 = ["PySide6"]
+qt-pyqt5 = ["PyQt5"]
+qt-pyside2 = ["PySide2"]
+
+[tool.hatch.envs.default]
+dependencies = [
+  "mpl_qt_tabbed_plots[qt-pyside6]"
+]
+
 
 [project.urls]
 Homepage = "https://github.com/mjhaskell/mpl_qt_tabbed_plots"
