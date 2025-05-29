@@ -43,4 +43,6 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
         self.figure_wigets[id_] = new_tab
         idx = self.currentIndex()
         super().addTab(new_tab, id_)
+        self.setCurrentWidget(new_tab) # activate tab to auto size figure
+        self.setCurrentIndex(idx) # switch back to original tab
         return new_tab.figure
