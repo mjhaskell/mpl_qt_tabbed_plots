@@ -17,6 +17,7 @@ matplotlib.rcParams['ps.fonttype'] = 42
 
 from .figure_widget import FigureWidget
 from .tabbed_figure_widget import TabbedFigureWidget
+from .tab_group_container import TabGroupContainer
 
 # if sys.modules.get('IPython') is not None:
 try:
@@ -53,6 +54,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
 
     def __new__(cls, window_id: str|int|None = None,
                 size: tuple[int,int] = (1280, 900),
+                nrows: int|list[int] = 1, ncols: int|list[int] = 1,
                 open_window: bool = False):
         if window_id is None:
             # Generate a unique identifier if none is provided
@@ -75,16 +77,25 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
 
     def __init__(self, window_id: str|int|None = None,
                  size: tuple[int,int] = (1280, 900),
+                 nrows: int|list[int] = 1, ncols: int|list[int] = 1,
                  open_window: bool = True):
         """
         Creates a new tabbed plot window with the given ID and size. If a window
         with the same ID already exists, it will return that instance instead of
-        creating a new one.
+        creating a new one. Only nrows or ncols can be a list, not both.
 
         Args:
             window_id (str|int|None): The ID of the window. If None, a unique ID
                 will be created based on the number of existing windows.
             size (tuple[int,int]): The size of the window in pixels.
+            nrows (int|list[int]): The number of rows of tab groups. If a list,
+                specifies the number of columns in each row, e.g. nrows=[1,2]
+                would have 1 row in the first column and 2 rows in the second
+                column.
+            ncols (int|list[int]): The number of columns of tab groups. If a
+                list, specifies the number of rows in each column,
+                e.g. ncols=[1,2] would have 1 column in the first row and 2
+                columns in the second row.
             open_window (bool): If True, the window will be displayed
                 immediately after creation. Otherwise, it will be hidden until
                 another method is called to show it.
@@ -95,13 +106,66 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         self.id = str(self._latest_id)
         self.setWindowTitle(f'Plot Window: {self.id}')
         self.resize(*size)
-        self.tabs = TabbedFigureWidget()
-        self.setCentralWidget(self.tabs)
+        main_widget = QtWidgets.QWidget()
+        self.setCentralWidget(main_widget)
+
+        row_major = True
+        tab_groups = []
+        if isinstance(nrows, int) and isinstance(ncols, int):
+            ## create a grid layout with nrows x ncols
+            main_layout = QtWidgets.QGridLayout(main_widget)
+            if nrows < 1 or ncols < 1:
+                raise ValueError(f'Can not have {nrows} rows or {ncols} columns. Must be at least 1.')
+            for r in range(nrows):
+                row: list[TabbedFigureWidget] = []
+                for c in range(ncols):
+                    widget = TabbedFigureWidget()
+                    row.append(widget)
+                    main_layout.addWidget(widget, r, c)
+                tab_groups.append(row)
+        elif isinstance(ncols, list):
+            ## create a vertical layout nested with horizontal layouts
+            if isinstance(nrows, list):
+                raise ValueError('Either nrows or ncols can be a list, not both.')
+            main_layout = QtWidgets.QVBoxLayout(main_widget)
+            for r in ncols:
+                if r < 1:
+                    raise ValueError(f'Can not have {r} columns. Must be at least 1.')
+                widget_row = QtWidgets.QWidget()
+                hlayout = QtWidgets.QHBoxLayout(widget_row)
+                row = []
+                for c in range(r):
+                    widget = TabbedFigureWidget()
+                    row.append(widget)
+                    hlayout.addWidget(widget)
+                tab_groups.append(row)
+                main_layout.addWidget(widget_row)
+        elif isinstance(nrows, list):
+            ## create a horizontal layout nested with vertical layouts
+            if isinstance(ncols, list):
+                raise ValueError('Either nrows or ncols can be a list, not both.')
+            row_major = False
+            main_layout = QtWidgets.QHBoxLayout(main_widget)
+            for c in nrows:
+                if c < 1:
+                    raise ValueError(f'Can not have {c} columns. Must be at least 1.')
+                widget_col = QtWidgets.QWidget()
+                vlayout = QtWidgets.QVBoxLayout(widget_col)
+                col = []
+                for r in range(c):
+                    widget = TabbedFigureWidget()
+                    col.append(widget)
+                    vlayout.addWidget(widget)
+                tab_groups.append(col)
+                main_layout.addWidget(widget_col)
+        self.tab_groups = TabGroupContainer(tab_groups, row_major)
+
         if open_window:
             self.show()
 
     def add_figure_tab(self, tab_id: str, blit: bool = False,
-               include_toolbar: bool = True) -> Figure:
+                       include_toolbar: bool = True,
+                       row: int = 0, col: int = 0) -> Figure:
         """
         Adds a new tab to the window with the given ID and returns the Figure
         created for that tab. If a tab with the same ID already exists, the
@@ -115,22 +179,24 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         Returns:
             figure (Figure): The matplotlib figure in this tab.
         """
-        figure = self.tabs.add_figure_tab(tab_id, blit, include_toolbar)
+        fig_tab_widget = self.tab_groups[row, col]
+        figure = fig_tab_widget.add_figure_tab(tab_id, blit, include_toolbar)
         return figure
 
     def update(self) -> None:
         """
-        This will update the figure on the active (visible) tab. Similar to
+        This will update the figure on the active (visible) tabs. Similar to
         pyplot.pause(), but for the current tab on this window. No additional time
         delay is added to the function, so it will return immediately after
         updating the figure.
         """
         if not self.isVisible():
             self.show()
-        active_tab = self.tabs.currentIndex()
-        active_widget = self.tabs.widget(active_tab)
-        if isinstance(active_widget, FigureWidget):
-            active_widget.update_figure()
+        for tabs in self.tab_groups:
+            active_tab_idx = tabs.currentIndex()
+            active_widget = tabs.widget(active_tab_idx)
+            if isinstance(active_widget, FigureWidget):
+                active_widget.update_figure()
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """
@@ -153,16 +219,16 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         they are not the active Figure. Same as calling figure.tight_layout()
         directly on each Figure.
         """
-        current_index = self.tabs.currentIndex()
-        for i in range(self.tabs.count()):
-            tab = self.tabs.widget(i)
-            if not isinstance(tab, FigureWidget):
-                continue
-            self.tabs.setCurrentIndex(i) # tab has to be active to apply tight layout
-            tab.update_figure()
-            tab.figure.tight_layout()
-            tab.canvas.draw_idle()
-        self.tabs.setCurrentIndex(current_index)
+        for tabs in self.tab_groups:
+            current_index = tabs.currentIndex()
+            for i in range(tabs.count()):
+                tab = tabs.widget(i)
+                if not isinstance(tab, FigureWidget):
+                    continue
+                tabs.setCurrentIndex(i) # tab has to be active to apply tight layout
+                tab.figure.tight_layout()
+                tab.update_figure()
+            tabs.setCurrentIndex(current_index)
 
     @staticmethod
     def show_all(tight_layout: bool = True, block: bool = True) -> None:
