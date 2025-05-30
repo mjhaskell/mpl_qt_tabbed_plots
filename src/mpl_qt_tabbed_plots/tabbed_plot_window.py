@@ -54,9 +54,9 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
     _count = 0
 
     def __new__(cls, window_id: str|int|None = None,
-                size: tuple[int,int] = (1280, 900),
                 nrows: int|list[int] = 1, ncols: int|list[int] = 1,
-                open_window: bool = False):
+                size: tuple[int,int] = (1280, 900), open_window: bool = True,
+                autohide_tabs: bool = False, tab_position: str = 't') -> Self:
         if window_id is None:
             # Generate a unique identifier if none is provided
             id_ = str(len(cls._registry) + 1)
@@ -77,9 +77,9 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         return instance
 
     def __init__(self, window_id: str|int|None = None,
-                 size: tuple[int,int] = (1280, 900),
                  nrows: int|list[int] = 1, ncols: int|list[int] = 1,
-                 open_window: bool = True):
+                 size: tuple[int,int] = (1280, 900), open_window: bool = True,
+                 autohide_tabs: bool = False, tab_position: str = 'top'):
         """
         Creates a new tabbed plot window with the given ID and size. If a window
         with the same ID already exists, it will return that instance instead of
@@ -100,6 +100,11 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
             open_window (bool): If True, the window will be displayed
                 immediately after creation. Otherwise, it will be hidden until
                 another method is called to show it.
+            autohide_tabs (bool): If True, the tab bar will auto-hide when there
+                is only one tab in a tab group.
+            tab_position (str): The position of the tab bar. This can be 'top',
+                'bottom', 'left', or 'right' as well as 'north', 'south',
+                'east', or 'west' (logic only looks at first character).
         """
         if hasattr(self, 'id'):
             return
@@ -122,7 +127,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
             for r in range(nrows):
                 row: list[TabbedFigureWidget] = []
                 for c in range(ncols):
-                    widget = TabbedFigureWidget()
+                    widget = TabbedFigureWidget(autohide_tabs, tab_position)
                     row.append(widget)
                     main_layout.addWidget(widget, r, c)
                 tab_groups.append(row)
@@ -139,7 +144,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
                 hlayout.setContentsMargins(0, 0, 0, 0)
                 row = []
                 for c in range(r):
-                    widget = TabbedFigureWidget()
+                    widget = TabbedFigureWidget(autohide_tabs, tab_position)
                     row.append(widget)
                     hlayout.addWidget(widget)
                 tab_groups.append(row)
@@ -158,7 +163,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
                 vlayout.setContentsMargins(0, 0, 0, 0)
                 col = []
                 for r in range(c):
-                    widget = TabbedFigureWidget()
+                    widget = TabbedFigureWidget(autohide_tabs, tab_position)
                     col.append(widget)
                     vlayout.addWidget(widget)
                 tab_groups.append(col)
@@ -235,6 +240,26 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
                 tab.figure.tight_layout()
                 tab.update_figure()
             tabs.setCurrentIndex(current_index)
+
+    def enable_tab_autohide(self, enable: bool = True) -> None:
+        """
+        Enables auto-hiding of tabs in the window. This will hide the tab bar
+        when there is only one tab in a tab group.
+        """
+        for tabs in self.tab_groups:
+            tabs.setTabBarAutoHide(enable)
+
+    def set_tab_position(self, position: str) -> None:
+        """
+        Sets the position of the tab bar in the window.
+
+        Args:
+            position (str): The position of the tab bar. This can be 'top',
+                'bottom', 'left', or 'right' as well as 'north', 'south',
+                'east', or 'west' (logic only looks at first character).
+        """
+        for tabs in self.tab_groups:
+            tabs.set_tab_position(position)
 
     @staticmethod
     def show_all(tight_layout: bool = True, block: bool = True) -> None:

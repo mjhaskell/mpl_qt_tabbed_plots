@@ -9,12 +9,21 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
     A Qt widget that can contains multiple tabs, each with a matplotlib Figure.
     This class inherits from QTabWidget in order to create a tabbed interface.
     """
-    def __init__(self):
+    def __init__(self, autohide: bool, position: str = 'top'):
         """
         Initializes the TabbedFigureWidget.
+
+        Args:
+            autohide (bool): If True, the tab bar will auto-hide when there is
+                only one tab.
+            position (str): The position of the tab bar. Can be 'top', 'bottom',
+                'left', or 'right' as well as 'north', 'south', 'east', or
+                'west' (only first character is checked).
         """
         super().__init__()
+        self.set_tab_position(position)
         tabbar = self.tabBar()
+        tabbar.setAutoHide(autohide)
         font = tabbar.font()
         font.setPointSize(8)
         tabbar.setFont(font)
@@ -46,3 +55,22 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
         self.setCurrentWidget(new_tab) # activate tab to auto size figure
         self.setCurrentIndex(idx) # switch back to original tab
         return new_tab.figure
+
+    def set_tab_position(self, position: str = 'top') -> None:
+        """
+        Sets the position of the tab bar.
+
+        Args:
+            position (str): The position of the tab bar. Can be 'top', 'bottom',
+                'left', or 'right' as well as 'north', 'south', 'east', or
+                'west' (only first character is checked).
+        """
+        char = position[0].lower()
+        if char in ['b', 's']:
+            self.setTabPosition(QtWidgets.QTabWidget.South)
+        elif char in ['l', 'w']:
+            self.setTabPosition(QtWidgets.QTabWidget.West)
+        elif char in ['r', 'e']:
+            self.setTabPosition(QtWidgets.QTabWidget.East)
+        else:
+            self.setTabPosition(QtWidgets.QTabWidget.North)
