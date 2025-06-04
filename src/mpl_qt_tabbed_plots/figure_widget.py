@@ -30,10 +30,10 @@ class FigureWidget(QtWidgets.QWidget):
         # self.figure.tight_layout() # does not seem to do anything here
         layout.addWidget(self.canvas)
 
-        if include_toolbar:
-            toolbar = NavigationToolbar(self.canvas, self)
-            toolbar.setMaximumHeight(25)
-            layout.addWidget(toolbar)
+        self.toolbar = NavigationToolbar(self.canvas, self)
+        self.toolbar.setMaximumHeight(25)
+        layout.addWidget(self.toolbar)
+        self.toolbar.setVisible(include_toolbar)
 
         self.setLayout(layout)
 
@@ -46,3 +46,13 @@ class FigureWidget(QtWidgets.QWidget):
         else:
             self.canvas.draw_idle()
         self.canvas.flush_events()
+
+    def show_toolbar(self, show: bool = True) -> None:
+        """
+        Show or hide the navigation toolbar.
+
+        Args:
+            show (bool): If True, shows the toolbar. If False, hides it.
+        """
+        if self.toolbar:
+            self.toolbar.setVisible(show)

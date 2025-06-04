@@ -9,7 +9,7 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
     A Qt widget that can contains multiple tabs, each with a matplotlib Figure.
     This class inherits from QTabWidget in order to create a tabbed interface.
     """
-    def __init__(self, autohide: bool, position: str = 'top'):
+    def __init__(self, autohide: bool, position: str = 'top', fontsize: int = 8):
         """
         Initializes the TabbedFigureWidget.
 
@@ -19,15 +19,14 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
             position (str): The position of the tab bar. Can be 'top', 'bottom',
                 'left', or 'right' as well as 'north', 'south', 'east', or
                 'west' (only first character is checked).
+            fontsize (int): The font size of the tab labels.
         """
         super().__init__()
-        self.set_tab_position(position)
         tabbar = self.tabBar()
         tabbar.setAutoHide(autohide)
-        font = tabbar.font()
-        font.setPointSize(8)
-        tabbar.setFont(font)
         tabbar.setContentsMargins(0, 0, 0, 0)
+        self.set_tab_position(position)
+        self.set_tab_fontsize(fontsize)
         self.figure_wigets: dict[str, FigureWidget] = {}
 
     def add_figure_tab(self, tab_id: str|int, blit: bool = False,
@@ -67,10 +66,22 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
         """
         char = position[0].lower()
         if char in ['b', 's']:
-            self.setTabPosition(QtWidgets.QTabWidget.South)
+            self.setTabPosition(QtWidgets.QTabWidget.South) # type: ignore
         elif char in ['l', 'w']:
-            self.setTabPosition(QtWidgets.QTabWidget.West)
+            self.setTabPosition(QtWidgets.QTabWidget.West) # type: ignore
         elif char in ['r', 'e']:
-            self.setTabPosition(QtWidgets.QTabWidget.East)
+            self.setTabPosition(QtWidgets.QTabWidget.East) # type: ignore
         else:
-            self.setTabPosition(QtWidgets.QTabWidget.North)
+            self.setTabPosition(QtWidgets.QTabWidget.North) # type: ignore
+
+    def set_tab_fontsize(self, fontsize: int) -> None:
+        """
+        Sets the font size of the tab bar.
+
+        Args:
+            fontsize (int): The font size to set for the tab bar.
+        """
+        tabbar = self.tabBar()
+        font = tabbar.font()
+        font.setPointSize(fontsize)
+        tabbar.setFont(font)

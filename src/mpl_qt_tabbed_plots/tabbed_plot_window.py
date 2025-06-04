@@ -55,8 +55,9 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
 
     def __new__(cls, window_id: str|int|None = None,
                 nrows: int|list[int] = 1, ncols: int|list[int] = 1,
-                size: tuple[int,int] = (1280, 900), open_window: bool = True,
-                autohide_tabs: bool = False, tab_position: str = 't') -> Self:
+                size: tuple[int|float, int|float] = (0.6, 0.8),
+                open_window: bool = True, autohide_tabs: bool = False,
+                tab_position: str = 'top', tab_fontsize: int = 8) -> Self:
         if window_id is None:
             # Generate a unique identifier if none is provided
             id_ = str(len(cls._registry) + 1)
@@ -78,8 +79,9 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
 
     def __init__(self, window_id: str|int|None = None,
                  nrows: int|list[int] = 1, ncols: int|list[int] = 1,
-                 size: tuple[int,int] = (1280, 900), open_window: bool = True,
-                 autohide_tabs: bool = False, tab_position: str = 'top'):
+                 size: tuple[int|float, int|float] = (0.6, 0.8),
+                 open_window: bool = True, autohide_tabs: bool = False,
+                 tab_position: str = 'top', tab_fontsize: int = 8):
         """
         Creates a new tabbed plot window with the given ID and size. If a window
         with the same ID already exists, it will return that instance instead of
@@ -88,7 +90,10 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         Args:
             window_id (str|int|None): The ID of the window. If None, a unique ID
                 will be created based on the number of existing windows.
-            size (tuple[int,int]): The size of the window in pixels.
+            size (tuple[int|float, int|float]): Size of the window (width, height).
+                If an int, the value will be treated as pixels. If a float, it will be
+                treated as a percentage of the screen size (based on your
+                PRIMARY DISPLAY).
             nrows (int|list[int]): The number of rows of tab groups. If a list,
                 specifies the number of columns in each row, e.g. nrows=[1,2]
                 would have 1 row in the first column and 2 rows in the second
@@ -105,15 +110,14 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
             tab_position (str): The position of the tab bar. This can be 'top',
                 'bottom', 'left', or 'right' as well as 'north', 'south',
                 'east', or 'west' (logic only looks at first character).
+            tab_fontsize (int): The font size of the tab labels.
         """
         if hasattr(self, 'id'):
             return
         super().__init__()
         self.id = str(self._latest_id)
         self.setWindowTitle(f'Plot Window: {self.id}')
-        self.resize(*size)
-        img = os.path.join(os.path.dirname(__file__), 'abra.svg')
-        self.setWindowIcon(QtGui.QIcon(img))
+        self.set_size(size)
         main_widget = QtWidgets.QWidget()
         self.setCentralWidget(main_widget)
 
@@ -127,7 +131,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
             for r in range(nrows):
                 row: list[TabbedFigureWidget] = []
                 for c in range(ncols):
-                    widget = TabbedFigureWidget(autohide_tabs, tab_position)
+                    widget = TabbedFigureWidget(autohide_tabs, tab_position, tab_fontsize)
                     row.append(widget)
                     main_layout.addWidget(widget, r, c)
                 tab_groups.append(row)
@@ -144,7 +148,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
                 hlayout.setContentsMargins(0, 0, 0, 0)
                 row = []
                 for c in range(r):
-                    widget = TabbedFigureWidget(autohide_tabs, tab_position)
+                    widget = TabbedFigureWidget(autohide_tabs, tab_position, tab_fontsize)
                     row.append(widget)
                     hlayout.addWidget(widget)
                 tab_groups.append(row)
@@ -163,7 +167,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
                 vlayout.setContentsMargins(0, 0, 0, 0)
                 col = []
                 for r in range(c):
-                    widget = TabbedFigureWidget(autohide_tabs, tab_position)
+                    widget = TabbedFigureWidget(autohide_tabs, tab_position, tab_fontsize)
                     col.append(widget)
                     vlayout.addWidget(widget)
                 tab_groups.append(col)
@@ -224,6 +228,32 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         if TabbedPlotWindow._count == 0:
             self._app.quit()
 
+    def set_size(self, size: tuple[int|float, int|float]) -> None:
+        """
+        Sets the size of the window.
+
+        Args:
+            size (tuple[int|float, int|float]): Size of the window (width, height).
+                If an int, the value will be treated as pixels. If a float, it will be
+                treated as a percentage of the screen size.
+        """
+        width, height = size
+        if width <= 0 or height <= 0:
+            raise ValueError(f"Invalid size: {size}. Values must be positive.")
+        screen_size = self.screen().size()
+        screen_width, screen_height = screen_size.width(), screen_size.height()
+        if isinstance(width, float):
+            if width > 1.0:
+                raise ValueError(f"Width percentage {width} must be between 0 and 1.")
+            width = int(screen_width * width)
+        if isinstance(height, float):
+            if height > 1.0:
+                raise ValueError(f"Height percentage {height} must be between 0 and 1.")
+            height = int(screen_height * height)
+        width = min(width, screen_width)
+        height = min(height, screen_height)
+        self.resize(width, height)
+
     def apply_tight_layout(self):
         """
         Applies a tight layout to the figure in each tab of the window, even if
@@ -261,6 +291,16 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         for tabs in self.tab_groups:
             tabs.set_tab_position(position)
 
+    def set_tab_fontsize(self, fontsize: int) -> None:
+        """
+        Sets the font size of the tab labels in the window.
+
+        Args:
+            fontsize (int): The font size of the tab labels.
+        """
+        for tabs in self.tab_groups:
+            tabs.set_tab_fontsize(fontsize)
+
     @staticmethod
     def show_all(tight_layout: bool = True, block: bool = True) -> None:
         """
@@ -287,7 +327,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
             return
         if TabbedPlotWindow._count > 0 and TabbedPlotWindow._app is not None:
             try:
-                TabbedPlotWindow._app.exec()
+                TabbedPlotWindow._app.exec() # type: ignore
             except:
                 TabbedPlotWindow._app.exec_() # for compatibility with Qt5
 
@@ -318,3 +358,21 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
             remaining_delay = max(delay_seconds - update_time, 0.0)
             time.sleep(remaining_delay)
         return update_time
+
+    @staticmethod
+    def get_screen_size() -> tuple[int, int]:
+        """
+        Returns the size of the screen in pixels. Tries to get the screen size
+        of the screen at the current cursor position. If no screen is found,
+        it will return the size of the primary screen.
+
+        Returns:
+            (width, height) (tuple[int, int]): The width and height of the screen
+                in pixels.
+        """
+        screen = TabbedPlotWindow._app.screenAt(QtGui.QCursor.pos())
+        if screen is None:
+            # Fallback to primary screen if no screen is found at cursor position
+            screen = TabbedPlotWindow._app.primaryScreen()
+        size = screen.size()
+        return size.width(), size.height()
