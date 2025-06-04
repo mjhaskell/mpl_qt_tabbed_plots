@@ -42,9 +42,9 @@ dependencies = [
 
 
 [project.urls]
-Homepage = "https://github.com/mjhaskell/abracatabra"
-Repository = "https://github.com/mjhaskell/abracatabra.git"
-Issues = "https://github.com/mjhaskell/abracatabra/issues"
+Homepage = "https://github.com/byu-magicc/abracatabra"
+Repository = "https://github.com/byu-magicc/abracatabra.git"
+Issues = "https://github.com/byu-magicc/abracatabra/issues"
 
 [tool.hatch.version]
 path = "src/abracatabra/__about__.py"
