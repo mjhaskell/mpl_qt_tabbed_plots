@@ -1,4 +1,25 @@
+"""
+abracatabra
+===========
+A library for creating tabbed plot windows with matplotlib in a Qt environment.
+
+Windows can be created with one or more tab groups. Each tab group can contain
+one or more tabs, where is tab is a matplotlib Figure. The library provides
+functions to show all open windows, update them, and a fun `abracatabra` function
+to display all windows with a magical touch.
+
+This package provides:
+- `TabbedPlotWindow`: The main class for creating and managing tabbed plot windows.
+- `show_all_windows`: Displays all open tabbed plot windows.
+- `update_all_windows`: Updates all open tabbed plot windows.
+- `abracatabra`: A fun function to display all open tabbed plot windows.
+- `is_interactive`: Checks if the current environment is interactive (e.g., IPython or Jupyter).
+- `__version__`: The version of the abracatabra package.
+"""
+
 from .tabbed_plot_window import TabbedPlotWindow, _in_ipython
+from .__about__ import __version__
+
 
 def show_all_windows(tight_layout: bool = False, block: bool = True) -> None:
     """
@@ -47,3 +68,13 @@ def is_interactive() -> bool:
     Returns True if the current environment is interactive (e.g., IPython or Jupyter).
     """
     return bool(_in_ipython)
+
+
+__all__ = [
+    'TabbedPlotWindow',
+    'show_all_windows',
+    'update_all_windows',
+    'abracatabra',
+    'is_interactive',
+    '__version__',
+]
