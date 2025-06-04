@@ -12,12 +12,12 @@ def show_all_windows(tight_layout: bool = False, block: bool = True) -> None:
 
 def update_all_windows(delay: float = 0.0) -> float:
     """
-    Updates all open tabbed plot windows. This is a replacement for plt.pause()
+    Updates all open tabbed plot windows. This is similar to pyplot.pause()
     and should be used when the plot data is changing over time. If not, use
-    TabbedPlotWindow.show_all() instead.
+    show_all_windows() instead.
 
     Args:
-        delay (float): The delay in seconds before the next update. Default is 0.0.
+        delay (float): The delay in seconds before the next update.
 
     Returns:
         update_time (float): How long it took to update all matplotlib Figures,

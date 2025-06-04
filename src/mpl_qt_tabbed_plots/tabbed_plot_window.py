@@ -51,7 +51,8 @@ icon_paths = [os.path.join(icon_dir, icon) for icon in icon_files]
 class TabbedPlotWindow(QtWidgets.QMainWindow):
     """
     A class to create a tabbed plot window where the tabs are matplotlib
-    figures.
+    figures. The window can also be divided into multiple tab groups, each
+    containing multiple tabs.
     """
     # _app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv)
     _app = QtWidgets.QApplication(sys.argv)
@@ -99,10 +100,6 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         Args:
             window_id (str|int|None): The ID of the window. If None, a unique ID
                 will be created based on the number of existing windows.
-            size (tuple[int|float, int|float]): Size of the window (width, height).
-                If an int, the value will be treated as pixels. If a float, it will be
-                treated as a percentage of the screen size (based on your
-                PRIMARY DISPLAY).
             nrows (int|list[int]): The number of rows of tab groups. If a list,
                 specifies the number of columns in each row, e.g. nrows=[1,2]
                 would have 1 row in the first column and 2 rows in the second
@@ -111,6 +108,10 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
                 list, specifies the number of rows in each column,
                 e.g. ncols=[1,2] would have 1 column in the first row and 2
                 columns in the second row.
+            size (tuple[int|float, int|float]): Size of the window (width, height).
+                If an int, the value will be treated as pixels. If a float, it will be
+                treated as a percentage of the screen size (based on your
+                PRIMARY DISPLAY).
             open_window (bool): If True, the window will be displayed
                 immediately after creation. Otherwise, it will be hidden until
                 another method is called to show it.
@@ -201,6 +202,8 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
             blit (bool): Whether blitting will be used with the Figure in this tab.
             include_toolbar (bool): Whether to include a matplotlib toolbar
                 with the Figure in this tab.
+            row (int): The row index of the tab group to add the tab to.
+            col (int): The column index of the tab group to add the tab to.
         Returns:
             figure (Figure): The matplotlib figure in this tab.
         """
@@ -240,12 +243,13 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
 
     def set_size(self, size: tuple[int|float, int|float]) -> None:
         """
-        Sets the size of the window.
+        Sets the size of the window in either pixels or a percentage of the
+        screen.
 
         Args:
             size (tuple[int|float, int|float]): Size of the window (width, height).
-                If an int, the value will be treated as pixels. If a float, it will be
-                treated as a percentage of the screen size.
+                If an int, the value will be treated as pixels. If a float,
+                it will be treated as a percentage of the screen size.
         """
         width, height = size
         if width <= 0 or height <= 0:
@@ -285,6 +289,9 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         """
         Enables auto-hiding of tabs in the window. This will hide the tab bar
         when there is only one tab in a tab group.
+
+        Args:
+            enable (bool): Whether to enable auto-hiding of tabs.
         """
         for tabs in self.tab_groups:
             tabs.setTabBarAutoHide(enable)
@@ -314,9 +321,9 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
     @staticmethod
     def show_all(tight_layout: bool = True, block: bool = True) -> None:
         """
-        Shows all created windows. Each window will stay open until individually
-        closed or else <ctrl+c> is pressed in the terminal that launched the
-        application.
+        Shows all created windows. If block is True, each window will stay open
+        until individually closed or else <ctrl+c> is pressed in the terminal
+        that launched the application.
 
         Args:
             tight_layout (bool): If True, apply tight layout to all figures

@@ -14,10 +14,9 @@ class FigureWidget(QtWidgets.QWidget):
 
         Args:
             blit (bool): If True, enables blitting for faster rendering.
-                Default is False.
             include_toolbar (bool): If True, includes a navigation toolbar
-                with the canvas. Default is True.
-            parent: The parent widget for this widget. Default is None.
+                with the canvas.
+            parent: The parent widget for this widget.
         """
         super().__init__(parent)
         self.blit = blit
@@ -38,6 +37,15 @@ class FigureWidget(QtWidgets.QWidget):
         self.setLayout(layout)
 
     def update_figure(self) -> None:
+        """
+        Updates the figure canvas if anything has changed. If blitting is
+        enabled, it will only redraw the parts of the figure that have changed.
+        If not, it will redraw the entire canvas. NOTE that blitting requires
+        the user to manage the background and artist updates manually, i.e., the
+        user must call `canvas.copy_from_bbox()` and `canvas.restore_region()`
+        at the appropriate times AND ensure that the artists are drawn before
+        calling this method.
+        """
         if not self.figure.stale:
             return
         if self.blit:
@@ -54,5 +62,4 @@ class FigureWidget(QtWidgets.QWidget):
         Args:
             show (bool): If True, shows the toolbar. If False, hides it.
         """
-        if self.toolbar:
-            self.toolbar.setVisible(show)
+        self.toolbar.setVisible(show)
