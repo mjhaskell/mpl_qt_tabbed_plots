@@ -3,6 +3,7 @@ import signal
 import sys
 import os
 import time
+import random
 if sys.version_info < (3, 11):
     from typing_extensions import Self
 else:
@@ -42,16 +43,24 @@ else:
     # over the window or some other Qt action causes events to process.
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
+icon_dir = os.path.join(os.path.dirname(__file__), 'icons')
+# icon_files = ['tabplot.svg'] + [f'abracatabra{i}.svg' for i in range(1, 4)]
+icon_files = ['tabplot.svg', f'abracatabra{random.choice([1, 2, 3])}.svg']
+icon_paths = [os.path.join(icon_dir, icon) for icon in icon_files]
 
 class TabbedPlotWindow(QtWidgets.QMainWindow):
     """
     A class to create a tabbed plot window where the tabs are matplotlib
     figures.
     """
+    # _app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv)
     _app = QtWidgets.QApplication(sys.argv)
     _registry: dict[str, Self] = {}
     _latest_id = None
     _count = 0
+    # _icons = [QtGui.QIcon(icon) for icon in icon_paths]
+    _icon1 = QtGui.QIcon(icon_paths[0])
+    _icon2 = QtGui.QIcon(icon_paths[1])
 
     def __new__(cls, window_id: str|int|None = None,
                 nrows: int|list[int] = 1, ncols: int|list[int] = 1,
@@ -118,6 +127,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         self.id = str(self._latest_id)
         self.setWindowTitle(f'Plot Window: {self.id}')
         self.set_size(size)
+        self.setWindowIcon(TabbedPlotWindow._icon1)
         main_widget = QtWidgets.QWidget()
         self.setCentralWidget(main_widget)
 
