@@ -38,11 +38,11 @@ pip install "mpt_qt_tabbed_plots[qt-pyside6]"
 
 ```python
 import numpy as np
-import mpl_qt_tabbed_plots as tabby
+import abracatabra
 
 
-window1 = tabby.TabbedPlotWindow(window_id='test', ncols=2)
-window2 = tabby.TabbedPlotWindow(size=(500,400))
+window1 = abracatabra.TabbedPlotWindow(window_id='test', ncols=2)
+window2 = abracatabra.TabbedPlotWindow(size=(500,400))
 
 # data
 t = np.arange(0, 10, 0.001)
@@ -90,7 +90,7 @@ for k in range(100):
     line1.set_ydata(ysin)
     ycos = np.cos(t)
     line2.set_ydata(ycos)
-    tabby.update_all_windows(0.01)
+    abracatabra.update_all_windows(0.01)
 
-tabby.show_all_windows(block=True)
+abracatabra.abracatabra(block=True)
 ```

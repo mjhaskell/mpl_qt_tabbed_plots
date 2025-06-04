@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "mpl_qt_tabbed_plots"
+name = "abracatabra"
 dynamic = ["version"]
 description = "Tabbed plot extension for matplotlib using the Qt backend"
 dependencies = [
@@ -25,7 +25,7 @@ keywords = [
     "matplotlib",
     "qt",
     "tabbed", "tabs",
-    "plot", "plots",
+    "plot",
     "visualization",
 ]
 
@@ -37,25 +37,25 @@ qt-pyside2 = ["PySide2"]
 
 [tool.hatch.envs.default]
 dependencies = [
-  "mpl_qt_tabbed_plots[qt-pyside6]"
+  "abracatabra[qt-pyside6]"
 ]
 
 
 [project.urls]
-Homepage = "https://github.com/mjhaskell/mpl_qt_tabbed_plots"
-Repository = "https://github.com/mjhaskell/mpl_qt_tabbed_plots.git"
-Issues = "https://github.com/mjhaskell/mpl_qt_tabbed_plots/issues"
+Homepage = "https://github.com/mjhaskell/abracatabra"
+Repository = "https://github.com/mjhaskell/abracatabra.git"
+Issues = "https://github.com/mjhaskell/abracatabra/issues"
 
 [tool.hatch.version]
-path = "src/mpl_qt_tabbed_plots/__about__.py"
+path = "src/abracatabra/__about__.py"
 
 [tool.coverage.run]
-source_pkgs = ["mpl_qt_tabbed_plots", "tests"]
+source_pkgs = ["abracatabra", "tests"]
 branch = true
 parallel = true
 omit = [
-  "src/mpl_qt_tabbed_plots/__about__.py",
+  "src/abracatabra/__about__.py",
 ]
 
 [tool.hatch.build.targets.wheel.force-include]
-"src/mpl_qt_tabbed_plots/abra.svg" = "mpl_qt_tabbed_plots/abra.svg"
+"src/abracatabra/icons/" = "abracatabra/icons/"

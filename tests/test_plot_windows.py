@@ -1,11 +1,10 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from mpl_qt_tabbed_plots import TabbedPlotWindow
+import abracatabra
 
 
 def test_tabbed_plot_window():
-    window1 = TabbedPlotWindow('test')
-    window2 = TabbedPlotWindow(size=(500,400))
+    window1 = abracatabra.TabbedPlotWindow('test')
+    window2 = abracatabra.TabbedPlotWindow(size=(500,400))
 
     # data
     t = np.arange(0, 10, 0.001)
@@ -51,9 +50,9 @@ def test_tabbed_plot_window():
         ycos = np.cos(t)
         line2.set_ydata(ycos)
         # window1.update()
-        TabbedPlotWindow.update_all(0.01)
+        abracatabra.update_all_windows(0.01)
 
-    TabbedPlotWindow.show_all(block=False)
+    abracatabra.abracatabra(block=False)
 
 
 if __name__ == "__main__":
