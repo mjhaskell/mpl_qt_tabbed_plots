@@ -57,5 +57,5 @@ omit = [
   "src/abracatabra/__about__.py",
 ]
 
-[tool.hatch.build.targets.wheel.force-include]
-"src/abracatabra/icons/" = "abracatabra/icons/"
+#[tool.hatch.build.targets.wheel.force-include]
+#"src/abracatabra/icons/" = "abracatabra/icons/"
