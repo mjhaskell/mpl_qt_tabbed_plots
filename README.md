@@ -1,8 +1,8 @@
 # AbracaTABra
 
 This repository is basically a matplotlib extension using the Qt backend to create plot windows with groups of tabs, where the contents of each tab is a matplotlib figure.
-This package is essentially a replacement for pyplot; it creates and manages figures separately from pyplot, so calling `plt.show()` or `plt.pause()` will not do anything with windows created from this package.
-This package provides the functions `show_all_windows()` and `update_all_windows(delay)`, which are very similar in behavior to `show()` and `pause(interval)`, respectively, from pyplot.
+This package is essentially a replacement for pyplot; it creates and manages figures separately from pyplot, so calling `pyplot.show()` or `pyplot.pause()` will not do anything with windows created from this package.
+This package provides the functions `show_all_windows()` and `update_all_windows(delay_seconds)`, which are very similar in behavior to `show()` and `pause(interval)`, respectively, from pyplot.
 Also, `abracatabra()` is a more fun equivalent to `show_all_windows()`...you should try it out!
 
 ## Dependencies
@@ -93,7 +93,7 @@ for k in range(100):
     line2.set_ydata(ycos)
     abracatabra.update_all_windows(0.01)
 
-abracatabra.abracatabra(block=True)
+abracatabra.abracatabra()
 ```
 
 ### Example using blitting
