@@ -25,14 +25,14 @@ from .tab_group_container import TabGroupContainer
 try:
     from IPython.core.getipython import get_ipython
     from IPython.utils.capture import capture_output
-    _in_ipython = get_ipython()
+    _ipython = get_ipython()
 except ImportError:
-    _in_ipython = None
+    _ipython = None
 
-if _in_ipython:
+if _ipython:
     with capture_output() as captured: # suppress output
         # register IPython event loop to Qt - prevents need to call app.exec()
-        _in_ipython.run_line_magic('gui', 'qt')
+        _ipython.run_line_magic('gui', 'qt')
 
     # SIGINT handles ctrl+c. The following lines allow it to kill without errors.
     # Using sys.exit(0) in IPython stops script execution, but not the kernel.
@@ -42,6 +42,15 @@ else:
     # Qt throws a KeyboardInterrupt exception, but only when the mouse hovers
     # over the window or some other Qt action causes events to process.
     signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+def is_interactive() -> bool:
+    """
+    Check if the current environment is interactive (e.g., IPython or Jupyter).
+
+    Returns:
+        out (bool): True if the environment is interactive, False otherwise.
+    """
+    return bool(_ipython)
 
 icon_dir = os.path.join(os.path.dirname(__file__), 'icons')
 # icon_files = ['tabplot.svg'] + [f'abracatabra{i}.svg' for i in range(1, 4)]
@@ -53,6 +62,25 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
     A class to create a tabbed plot window where the tabs are matplotlib
     figures. The window can also be divided into multiple tab groups, each
     containing multiple tabs.
+
+    Attributes:
+        `id`: Unique identifier for the window.
+        `tab_groups`: A container for the tab groups in the window. Can be
+            accessed like a 2D array, e.g. `window.tab_groups[0, 0]` for the
+            tab group in the first row and first column.
+    Methods:
+        `add_figure_tab`: Method to add a new figure tab to the window.
+        `update`: Method to update the figure on the active tab.
+        `set_size`: Method to set the size of the window in either pixels or a
+            percentage of the screen.
+        `apply_tight_layout`: Applies a tight layout to the figure in each tab.
+        `enable_tab_autohide`: Enables auto-hiding of tabs in the window.
+        `set_tab_position`: Sets the position of the tab bar in the window.
+        `set_tab_fontsize`: Sets the font size of the tab labels in the window.
+    Static Methods:
+        `show_all`: Shows all created windows.
+        `update_all`: Updates all created windows.
+        `get_screen_size`: Returns the size of the screen in pixels.
     """
     # _app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv)
     _app = QtWidgets.QApplication(sys.argv)
@@ -199,13 +227,23 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
 
         Args:
             tab_id (str): The ID of the tab.
-            blit (bool): Whether blitting will be used with the Figure in this tab.
-            include_toolbar (bool): Whether to include a matplotlib toolbar
-                with the Figure in this tab.
+            blit (bool): Whether blitting will be used with the Figure in this
+                tab. If True, you are responsible for managing the background
+                and updating individual artists.
+            include_toolbar (bool): Whether to display a matplotlib toolbar with
+                the Figure in this tab.
             row (int): The row index of the tab group to add the tab to.
             col (int): The column index of the tab group to add the tab to.
         Returns:
             figure (Figure): The matplotlib figure in this tab.
+        Notes
+        -----
+        Can alternatively call `add_figure_tab` directly on a tab group:
+        ```python
+        window = TabbedPlotWindow(ncols=2)
+        fig_left = window.add_figure_tab("left", row=0, col=0)
+        fig_right = window.tab_groups[0, 1].add_figure_tab("right")
+        ```
         """
         fig_tab_widget = self.tab_groups[row, col]
         figure = fig_tab_widget.add_figure_tab(tab_id, blit, include_toolbar)
@@ -214,8 +252,8 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
     def update(self) -> None:
         """
         This will update the figure on the active (visible) tabs. Similar to
-        pyplot.pause(), but for the current tab on this window. No additional time
-        delay is added to the function, so it will return immediately after
+        pyplot.pause(), but for the current tab on this window. No additional
+        time delay is added to the function, so it will return immediately after
         updating the figure.
         """
         if not self.isVisible():
@@ -319,18 +357,18 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
             tabs.set_tab_fontsize(fontsize)
 
     @staticmethod
-    def show_all(tight_layout: bool = True, block: bool = True) -> None:
+    def show_all(tight_layout: bool = True, block: bool|None = None) -> None:
         """
-        Shows all created windows. If block is True, each window will stay open
-        until individually closed or else <ctrl+c> is pressed in the terminal
-        that launched the application.
+        Shows all created windows.
 
         Args:
-            tight_layout (bool): If True, apply tight layout to all figures
-                before showing them.
-            block (bool): If True, the function will block until all windows
-                are closed. If False, the function will return immediately after
-                showing the windows.
+            tight_layout (bool): If True, applies a tight layout to all figures.
+            block (bool): If True, block and run the GUI until all windows are
+                closed, either individually or by pressing <ctrl+c> in the
+                terminal. If False, the function returns immediately after
+                showing the windows and you are responsible for ensuring the GUI
+                event loop is running (interactive environments do this for you).
+                Defaults to False in interactive environments, otherwise True.
         """
         for key in list(TabbedPlotWindow._registry.keys()):
             if not key in TabbedPlotWindow._registry:
@@ -340,6 +378,8 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
                 window.show()
             if tight_layout:
                 window.apply_tight_layout()
+        if block is None:
+            block = not is_interactive()
         if not block:
             return
         if TabbedPlotWindow._count > 0 and TabbedPlotWindow._app is not None:
@@ -351,18 +391,20 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
     @staticmethod
     def update_all(delay_seconds: float) -> float:
         """
-        Updates all created windows. This is similar to pyplot.pause().
+        Updates all created windows. This is similar to pyplot.pause() and is
+        generally used to update the figure in a loop, e.g., an animation. This
+        function only updates active tabs in each window, so inactive tabs are
+        skipped to save time.
 
         Args:
-            delay_seconds (float): The amount of time to wait before returning,
-                accounting for the time taken to update the windows. If the plot
-                update time is greater than this value, no extra delay will be
-                added, but the function will take longer than this value to
-                return.
+            delay_seconds (float): The minimum delay in seconds before returning.
+                If windows are updated faster than this, this function will
+                block until `delay_seconds` seconds have passed. If the windows
+                take longer than `delay_seconds` seconds to update, the function
+                execution time will be greater than `delay_seconds`.
         Returns:
             update_time (float): The amount of time (seconds) taken to update
-                the windows. If less than delay_seconds, the function will wait
-                for the remaining time before returning.
+                the windows.
         """
         start = time.perf_counter()
         for key in list(TabbedPlotWindow._registry.keys()):
@@ -384,7 +426,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         it will return the size of the primary screen.
 
         Returns:
-            (width, height) (tuple[int, int]): The width and height of the screen
+            (width, height) (tuple[int,int]): The width and height of the screen
                 in pixels.
         """
         screen = TabbedPlotWindow._app.screenAt(QtGui.QCursor.pos())

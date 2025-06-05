@@ -8,7 +8,10 @@ class TabGroupContainer:
     def __init__(self, group_list: list[list[TabbedFigureWidget]],
                  row_major: bool):
         """
-        A container for a list of tab groups.
+        A container for a list of tab groups than can handle non-homogeneous
+        layouts and indexing, i.e., elements of the inner list do not need to
+        have the same length. Must index with two indices, even if there is
+        only one item in the list.
 
         Args:
             group_list (list[list[TabbedFigureWidget]]): A list of lists, where
@@ -27,7 +30,7 @@ class TabGroupContainer:
         Args:
             index (tuple[int, int]): A tuple containing two integers, where the
                 first integer is the row index and the second integer is the
-                column index.
+                column index. Must use 2 indices, even if there is only one item.
         """
         if not isinstance(index, Sequence) or len(index) != 2:
             raise ValueError(f'Index must contain two integers, got {index}')
@@ -37,4 +40,7 @@ class TabGroupContainer:
         return self._tab_groups[row][col]
 
     def __iter__(self):
+        """
+        Iterates over every tab group in the container.
+        """
         return chain.from_iterable(self._tab_groups)

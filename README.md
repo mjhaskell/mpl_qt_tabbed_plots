@@ -1,8 +1,9 @@
-# MPL Qt Tabbed Plots
+# AbracaTABra
 
 This repository is basically a matplotlib extension using the Qt backend to create plot windows with groups of tabs, where the contents of each tab is a matplotlib figure.
 This package is essentially a replacement for pyplot; it creates and manages figures separately from pyplot, so calling `plt.show()` or `plt.pause()` will not do anything with windows created from this package.
 This package provides the functions `show_all_windows()` and `update_all_windows(delay)`, which are very similar in behavior to `show()` and `pause(interval)`, respectively, from pyplot.
+Also, `abracatabra()` is a more fun equivalent to `show_all_windows()`...you should try it out!
 
 ## Dependencies
 
@@ -18,7 +19,7 @@ This package provides the functions `show_all_windows()` and `update_all_windows
 This will install the package as well as matplotlib, if it isn't installed:
 
 ```
-pip install mpt_qt_tabbed_plots
+pip install abracatabra
 ```
 
 Qt bindings are an optional dependency of the package.
@@ -31,7 +32,7 @@ A PyQt package is required for functionality, but there is no good way to have a
 
 For example, run this to install PySide6 along with this package:
 ```
-pip install "mpt_qt_tabbed_plots[qt-pyside6]"
+pip install "abracatabra[qt-pyside6]"
 ```
 
 ## Usage
@@ -50,15 +51,15 @@ ysin = np.sin(t)
 ycos = np.cos(t)
 
 
-f = window1.add_figure_tab("sin", col=0)
-ax = f.add_subplot()
+fig = window1.add_figure_tab("sin", col=0)
+ax = fig.add_subplot()
 line1, = ax.plot(t, ysin, '--')
 ax.set_xlabel('time')
 ax.set_ylabel('sin(t)')
 ax.set_title('Plot of sin(t)')
 
-f = window1.add_figure_tab("time", col=1)
-ax = f.add_subplot()
+fig = window1.add_figure_tab("time", col=1)
+ax = fig.add_subplot()
 ax.plot(t, t)
 ax.set_xlabel('time')
 ax.set_ylabel('t')
@@ -66,16 +67,16 @@ ax.set_title('Plot of t')
 
 window1.apply_tight_layout()
 
-f = window2.add_figure_tab("cos")
-ax = f.add_subplot()
+fig = window2.add_figure_tab("cos")
+ax = fig.add_subplot()
 line2, = ax.plot(t, ycos, '--')
 ax.set_xlabel('time')
 ax.set_ylabel('cos(t)')
 ax.set_title('Plot of cos(t)')
 
-f = window2.add_figure_tab("time")
-ax = f.add_subplot()
-ax.plot(t, t)
+fig = window2.add_figure_tab("sin^2")
+ax = fig.add_subplot()
+ax.plot(t, ysin**2)
 ax.set_xlabel('time')
 ax.set_ylabel('t')
 ax.set_title('Plot of t', fontsize=20)
@@ -93,4 +94,55 @@ for k in range(100):
     abracatabra.update_all_windows(0.01)
 
 abracatabra.abracatabra(block=True)
+```
+
+### Example using blitting
+
+```python
+import numpy as np
+import abracatabra
+
+
+blit = True
+window = abracatabra.TabbedPlotWindow(autohide_tabs=True)
+fig = window.add_figure_tab("robot arm animation", include_toolbar=False,
+                            blit=blit)
+ax = fig.add_subplot()
+
+# background elements
+fig.tight_layout()
+ax.set_aspect('equal', 'box')
+length = 1.0
+lim = 1.25 * length
+ax.axis((-lim, lim, -lim, lim))
+baseline, = ax.plot([0, length], [0, 0], 'k--')
+
+# draw and save background for fast rendering
+fig.canvas.draw()
+background = fig.canvas.copy_from_bbox(ax.bbox)
+
+# moving elements
+def get_arm_endpoints(theta):
+    x = np.array([0, length*np.cos(theta)])
+    y = np.array([0, length*np.sin(theta)])
+    return x, y
+
+theta_hist = np.sin(np.linspace(0, 10, 501))
+x, y = get_arm_endpoints(theta_hist[0])
+arm_line, = ax.plot(x, y, linewidth=5, color='blue')
+
+# animate
+for theta in theta_hist:
+    x, y = get_arm_endpoints(theta)
+    arm_line.set_xdata(x)
+    arm_line.set_ydata(y)
+
+    if blit:
+        fig.canvas.restore_region(background)
+        ax.draw_artist(arm_line)
+
+    abracatabra.update_all_windows(0.01)
+
+# keep window open
+abracatabra.abracatabra()
 ```

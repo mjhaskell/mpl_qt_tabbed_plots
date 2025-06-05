@@ -8,6 +8,11 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
     """
     A Qt widget that can contains multiple tabs, each with a matplotlib Figure.
     This class inherits from QTabWidget in order to create a tabbed interface.
+
+    Methods:
+        `add_figure_tab`: Adds a new tab with a matplotlib Figure.
+        `set_tab_position`: Sets the position of the tab bar.
+        `set_tab_fontsize`: Sets the font size of the tab bar.
     """
     def __init__(self, autohide: bool, position: str = 'top', fontsize: int = 8):
         """
@@ -27,7 +32,7 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
         tabbar.setContentsMargins(0, 0, 0, 0)
         self.set_tab_position(position)
         self.set_tab_fontsize(fontsize)
-        self.figure_wigets: dict[str, FigureWidget] = {}
+        self._figure_widgets: dict[str, FigureWidget] = {}
 
     def add_figure_tab(self, tab_id: str|int, blit: bool = False,
                        include_toolbar: bool = True) -> Figure:
@@ -46,9 +51,9 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
         """
         new_tab = FigureWidget(blit, include_toolbar)
         id_ = str(tab_id)
-        if id_ in self.figure_wigets:
-            return self.figure_wigets[id_].figure
-        self.figure_wigets[id_] = new_tab
+        if id_ in self._figure_widgets:
+            return self._figure_widgets[id_].figure
+        self._figure_widgets[id_] = new_tab
         idx = self.currentIndex()
         super().addTab(new_tab, id_)
         self.setCurrentWidget(new_tab) # activate tab to auto size figure
