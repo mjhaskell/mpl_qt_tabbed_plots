@@ -5,8 +5,7 @@ from .tabbed_figure_widget import TabbedFigureWidget
 
 
 class TabGroupContainer:
-    def __init__(self, group_list: list[list[TabbedFigureWidget]],
-                 row_major: bool):
+    def __init__(self, group_list: list[list[TabbedFigureWidget]], row_major: bool):
         """
         A container for a list of tab groups than can handle non-homogeneous
         layouts and indexing, i.e., elements of the inner list do not need to
@@ -23,7 +22,7 @@ class TabGroupContainer:
         self._tab_groups: list[list[TabbedFigureWidget]] = group_list
         self._row_major = row_major
 
-    def __getitem__(self, index: tuple[int,int]) -> TabbedFigureWidget:
+    def __getitem__(self, index: tuple[int, int]) -> TabbedFigureWidget:
         """
         Returns the tab group at the given index.
 
@@ -33,7 +32,7 @@ class TabGroupContainer:
                 column index. Must use 2 indices, even if there is only one item.
         """
         if not isinstance(index, Sequence) or len(index) != 2:
-            raise ValueError(f'Index must contain two integers, got {index}')
+            raise ValueError(f"Index must contain two integers, got {index}")
         row, col = index
         if not self._row_major:
             col, row = index

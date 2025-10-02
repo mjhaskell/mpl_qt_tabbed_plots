@@ -14,7 +14,8 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
         `set_tab_position`: Sets the position of the tab bar.
         `set_tab_fontsize`: Sets the font size of the tab bar.
     """
-    def __init__(self, autohide: bool, position: str = 'top', fontsize: int = 8):
+
+    def __init__(self, autohide: bool, position: str = "top", fontsize: int = 8):
         """
         Initializes the TabbedFigureWidget.
 
@@ -34,8 +35,9 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
         self.set_tab_fontsize(fontsize)
         self._figure_widgets: dict[str, FigureWidget] = {}
 
-    def add_figure_tab(self, tab_id: str|int, blit: bool = False,
-                       include_toolbar: bool = True) -> Figure:
+    def add_figure_tab(
+        self, tab_id: str | int, blit: bool = False, include_toolbar: bool = True
+    ) -> Figure:
         """
         Adds a new tab to the widget with the given title/tab_id, which
         creates and returns a matplotlib Figure. Tabs are displayed in the
@@ -56,11 +58,11 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
         self._figure_widgets[id_] = new_tab
         idx = self.currentIndex()
         super().addTab(new_tab, id_)
-        self.setCurrentWidget(new_tab) # activate tab to auto size figure
-        self.setCurrentIndex(idx) # switch back to original tab
+        self.setCurrentWidget(new_tab)  # activate tab to auto size figure
+        self.setCurrentIndex(idx)  # switch back to original tab
         return new_tab.figure
 
-    def set_tab_position(self, position: str = 'top') -> None:
+    def set_tab_position(self, position: str = "top") -> None:
         """
         Sets the position of the tab bar.
 
@@ -70,14 +72,14 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
                 'west' (only first character is checked).
         """
         char = position[0].lower()
-        if char in ['b', 's']:
-            self.setTabPosition(QtWidgets.QTabWidget.South) # type: ignore
-        elif char in ['l', 'w']:
-            self.setTabPosition(QtWidgets.QTabWidget.West) # type: ignore
-        elif char in ['r', 'e']:
-            self.setTabPosition(QtWidgets.QTabWidget.East) # type: ignore
+        if char in ["b", "s"]:
+            self.setTabPosition(QtWidgets.QTabWidget.South)  # type: ignore
+        elif char in ["l", "w"]:
+            self.setTabPosition(QtWidgets.QTabWidget.West)  # type: ignore
+        elif char in ["r", "e"]:
+            self.setTabPosition(QtWidgets.QTabWidget.East)  # type: ignore
         else:
-            self.setTabPosition(QtWidgets.QTabWidget.North) # type: ignore
+            self.setTabPosition(QtWidgets.QTabWidget.North)  # type: ignore
 
     def set_tab_fontsize(self, fontsize: int) -> None:
         """

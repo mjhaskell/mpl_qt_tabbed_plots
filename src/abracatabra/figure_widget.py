@@ -12,7 +12,8 @@ class FigureWidget(QtWidgets.QWidget):
         `update_figure`: Updates the figure canvas if anything has changed.
         `show_toolbar`: Show or hide the navigation toolbar.
     """
-    def __init__(self, blit: bool = False, include_toolbar: bool = True, parent = None):
+
+    def __init__(self, blit: bool = False, include_toolbar: bool = True, parent=None):
         """
         Initializes the FigureWidget. This creates a matplotlib figure canvas
         and optionally includes a navigation toolbar.

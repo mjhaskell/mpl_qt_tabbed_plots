@@ -21,7 +21,7 @@ from .tabbed_plot_window import TabbedPlotWindow, is_interactive
 from .__about__ import __version__
 
 
-def show_all_windows(tight_layout: bool = False, block: bool|None = None) -> None:
+def show_all_windows(tight_layout: bool = False, block: bool | None = None) -> None:
     """
     Shows all created windows.
 
@@ -40,6 +40,7 @@ def show_all_windows(tight_layout: bool = False, block: bool|None = None) -> Non
     `is_interactive()` : checks if the current environment is interactive.
     """
     TabbedPlotWindow.show_all(tight_layout, block)
+
 
 def update_all_windows(delay_seconds: float = 0.0) -> float:
     """
@@ -64,8 +65,10 @@ def update_all_windows(delay_seconds: float = 0.0) -> float:
     """
     return TabbedPlotWindow.update_all(delay_seconds)
 
-def abracatabra(tight_layout: bool = False, block: bool|None = None,
-                verbose: bool = True) -> None:
+
+def abracatabra(
+    tight_layout: bool = False, block: bool | None = None, verbose: bool = True
+) -> None:
     """
     A more fun equivalent to `show_all_windows()`. Shows all created windows.
 
@@ -92,10 +95,10 @@ def abracatabra(tight_layout: bool = False, block: bool|None = None,
 
 
 __all__ = [
-    'TabbedPlotWindow',
-    'show_all_windows',
-    'update_all_windows',
-    'abracatabra',
-    'is_interactive',
-    '__version__',
+    "TabbedPlotWindow",
+    "show_all_windows",
+    "update_all_windows",
+    "abracatabra",
+    "is_interactive",
+    "__version__",
 ]

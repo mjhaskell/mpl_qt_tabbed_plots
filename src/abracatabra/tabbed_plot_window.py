@@ -4,6 +4,7 @@ import sys
 import os
 import time
 import random
+
 if sys.version_info < (3, 11):
     from typing_extensions import Self
 else:
@@ -14,8 +15,9 @@ from matplotlib.backends.qt_compat import QtWidgets, QtGui
 
 # Fix plot font types to work in paper sumbissions (Don't use type 3 fonts)
 import matplotlib
-matplotlib.rcParams['pdf.fonttype'] = 42
-matplotlib.rcParams['ps.fonttype'] = 42
+
+matplotlib.rcParams["pdf.fonttype"] = 42
+matplotlib.rcParams["ps.fonttype"] = 42
 
 from .figure_widget import FigureWidget
 from .tabbed_figure_widget import TabbedFigureWidget
@@ -24,15 +26,17 @@ from .tab_group_container import TabGroupContainer
 # if sys.modules.get('IPython') is not None:
 try:
     from IPython.core.getipython import get_ipython
-    from IPython.utils.capture import capture_output
+
     _ipython = get_ipython()
 except ImportError:
     _ipython = None
 
-if _ipython:
-    with capture_output() as captured: # suppress output
+if _ipython is not None:
+    from IPython.utils.capture import capture_output
+
+    with capture_output() as captured:  # suppress output
         # register IPython event loop to Qt - prevents need to call app.exec()
-        _ipython.run_line_magic('gui', 'qt')
+        _ipython.run_line_magic("gui", "qt")
 
     # SIGINT handles ctrl+c. The following lines allow it to kill without errors.
     # Using sys.exit(0) in IPython stops script execution, but not the kernel.
@@ -43,6 +47,7 @@ else:
     # over the window or some other Qt action causes events to process.
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
+
 def is_interactive() -> bool:
     """
     Check if the current environment is interactive (e.g., IPython or Jupyter).
@@ -52,10 +57,12 @@ def is_interactive() -> bool:
     """
     return bool(_ipython)
 
-icon_dir = os.path.join(os.path.dirname(__file__), 'icons')
+
+icon_dir = os.path.join(os.path.dirname(__file__), "icons")
 # icon_files = ['tabplot.svg'] + [f'abracatabra{i}.svg' for i in range(1, 4)]
-icon_files = ['tabplot.svg', f'abracatabra{random.choice([1, 2, 3])}.svg']
+icon_files = ["tabplot.svg", f"abracatabra{random.choice([1, 2, 3])}.svg"]
 icon_paths = [os.path.join(icon_dir, icon) for icon in icon_files]
+
 
 class TabbedPlotWindow(QtWidgets.QMainWindow):
     """
@@ -82,6 +89,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         `update_all`: Updates all created windows.
         `get_screen_size`: Returns the size of the screen in pixels.
     """
+
     # _app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv)
     _app = QtWidgets.QApplication(sys.argv)
     _registry: dict[str, Self] = {}
@@ -91,11 +99,17 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
     _icon1 = QtGui.QIcon(icon_paths[0])
     _icon2 = QtGui.QIcon(icon_paths[1])
 
-    def __new__(cls, window_id: str|int|None = None,
-                nrows: int|list[int] = 1, ncols: int|list[int] = 1,
-                size: tuple[int|float, int|float] = (0.6, 0.8),
-                open_window: bool = True, autohide_tabs: bool = False,
-                tab_position: str = 'top', tab_fontsize: int = 8) -> Self:
+    def __new__(
+        cls,
+        window_id: str | int | None = None,
+        nrows: int | list[int] = 1,
+        ncols: int | list[int] = 1,
+        size: tuple[int | float, int | float] = (0.6, 0.8),
+        open_window: bool = True,
+        autohide_tabs: bool = False,
+        tab_position: str = "top",
+        tab_fontsize: int = 8,
+    ) -> Self:
         if window_id is None:
             # Generate a unique identifier if none is provided
             id_ = str(len(cls._registry) + 1)
@@ -115,11 +129,17 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         cls._count += 1
         return instance
 
-    def __init__(self, window_id: str|int|None = None,
-                 nrows: int|list[int] = 1, ncols: int|list[int] = 1,
-                 size: tuple[int|float, int|float] = (0.6, 0.8),
-                 open_window: bool = True, autohide_tabs: bool = False,
-                 tab_position: str = 'top', tab_fontsize: int = 8):
+    def __init__(
+        self,
+        window_id: str | int | None = None,
+        nrows: int | list[int] = 1,
+        ncols: int | list[int] = 1,
+        size: tuple[int | float, int | float] = (0.6, 0.8),
+        open_window: bool = True,
+        autohide_tabs: bool = False,
+        tab_position: str = "top",
+        tab_fontsize: int = 8,
+    ):
         """
         Creates a new tabbed plot window with the given ID and size. If a window
         with the same ID already exists, it will return that instance instead of
@@ -150,11 +170,11 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
                 'east', or 'west' (logic only looks at first character).
             tab_fontsize (int): The font size of the tab labels.
         """
-        if hasattr(self, 'id'):
+        if hasattr(self, "id"):
             return
         super().__init__()
         self.id = str(self._latest_id)
-        self.setWindowTitle(f'Plot Window: {self.id}')
+        self.setWindowTitle(f"Plot Window: {self.id}")
         self.set_size(size)
         self.setWindowIcon(TabbedPlotWindow._icon1)
         main_widget = QtWidgets.QWidget()
@@ -166,28 +186,34 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
             ## create a grid layout with nrows x ncols
             main_layout = QtWidgets.QGridLayout(main_widget)
             if nrows < 1 or ncols < 1:
-                raise ValueError(f'Can not have {nrows} rows or {ncols} columns. Must be at least 1.')
+                raise ValueError(
+                    f"Can not have {nrows} rows or {ncols} columns. Must be at least 1."
+                )
             for r in range(nrows):
                 row: list[TabbedFigureWidget] = []
                 for c in range(ncols):
-                    widget = TabbedFigureWidget(autohide_tabs, tab_position, tab_fontsize)
+                    widget = TabbedFigureWidget(
+                        autohide_tabs, tab_position, tab_fontsize
+                    )
                     row.append(widget)
                     main_layout.addWidget(widget, r, c)
                 tab_groups.append(row)
         elif isinstance(ncols, list):
             ## create a vertical layout nested with horizontal layouts
             if isinstance(nrows, list):
-                raise ValueError('Either nrows or ncols can be a list, not both.')
+                raise ValueError("Either nrows or ncols can be a list, not both.")
             main_layout = QtWidgets.QVBoxLayout(main_widget)
             for r in ncols:
                 if r < 1:
-                    raise ValueError(f'Can not have {r} columns. Must be at least 1.')
+                    raise ValueError(f"Can not have {r} columns. Must be at least 1.")
                 widget_row = QtWidgets.QWidget()
                 hlayout = QtWidgets.QHBoxLayout(widget_row)
                 hlayout.setContentsMargins(0, 0, 0, 0)
                 row = []
                 for c in range(r):
-                    widget = TabbedFigureWidget(autohide_tabs, tab_position, tab_fontsize)
+                    widget = TabbedFigureWidget(
+                        autohide_tabs, tab_position, tab_fontsize
+                    )
                     row.append(widget)
                     hlayout.addWidget(widget)
                 tab_groups.append(row)
@@ -195,18 +221,20 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         elif isinstance(nrows, list):
             ## create a horizontal layout nested with vertical layouts
             if isinstance(ncols, list):
-                raise ValueError('Either nrows or ncols can be a list, not both.')
+                raise ValueError("Either nrows or ncols can be a list, not both.")
             row_major = False
             main_layout = QtWidgets.QHBoxLayout(main_widget)
             for c in nrows:
                 if c < 1:
-                    raise ValueError(f'Can not have {c} columns. Must be at least 1.')
+                    raise ValueError(f"Can not have {c} columns. Must be at least 1.")
                 widget_col = QtWidgets.QWidget()
                 vlayout = QtWidgets.QVBoxLayout(widget_col)
                 vlayout.setContentsMargins(0, 0, 0, 0)
                 col = []
                 for r in range(c):
-                    widget = TabbedFigureWidget(autohide_tabs, tab_position, tab_fontsize)
+                    widget = TabbedFigureWidget(
+                        autohide_tabs, tab_position, tab_fontsize
+                    )
                     col.append(widget)
                     vlayout.addWidget(widget)
                 tab_groups.append(col)
@@ -217,9 +245,14 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         if open_window:
             self.show()
 
-    def add_figure_tab(self, tab_id: str, blit: bool = False,
-                       include_toolbar: bool = True,
-                       row: int = 0, col: int = 0) -> Figure:
+    def add_figure_tab(
+        self,
+        tab_id: str,
+        blit: bool = False,
+        include_toolbar: bool = True,
+        row: int = 0,
+        col: int = 0,
+    ) -> Figure:
         """
         Adds a new tab to the window with the given ID and returns the Figure
         created for that tab. If a tab with the same ID already exists, the
@@ -279,7 +312,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         if TabbedPlotWindow._count == 0:
             self._app.quit()
 
-    def set_size(self, size: tuple[int|float, int|float]) -> None:
+    def set_size(self, size: tuple[int | float, int | float]) -> None:
         """
         Sets the size of the window in either pixels or a percentage of the
         screen.
@@ -318,7 +351,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
                 tab = tabs.widget(i)
                 if not isinstance(tab, FigureWidget):
                     continue
-                tabs.setCurrentIndex(i) # tab has to be active to apply tight layout
+                tabs.setCurrentIndex(i)  # tab has to be active to apply tight layout
                 tab.figure.tight_layout()
                 tab.update_figure()
             tabs.setCurrentIndex(current_index)
@@ -357,7 +390,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
             tabs.set_tab_fontsize(fontsize)
 
     @staticmethod
-    def show_all(tight_layout: bool = True, block: bool|None = None) -> None:
+    def show_all(tight_layout: bool = True, block: bool | None = None) -> None:
         """
         Shows all created windows.
 
@@ -372,7 +405,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         """
         for key in list(TabbedPlotWindow._registry.keys()):
             if not key in TabbedPlotWindow._registry:
-                continue # in case window was closed during iteration
+                continue  # in case window was closed during iteration
             window = TabbedPlotWindow._registry[key]
             if not window.isVisible():
                 window.show()
@@ -384,9 +417,9 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
             return
         if TabbedPlotWindow._count > 0 and TabbedPlotWindow._app is not None:
             try:
-                TabbedPlotWindow._app.exec() # type: ignore
+                TabbedPlotWindow._app.exec()  # type: ignore
             except:
-                TabbedPlotWindow._app.exec_() # for compatibility with Qt5
+                TabbedPlotWindow._app.exec_()  # for compatibility with Qt5
 
     @staticmethod
     def update_all(delay_seconds: float) -> float:
@@ -409,7 +442,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         start = time.perf_counter()
         for key in list(TabbedPlotWindow._registry.keys()):
             if not key in TabbedPlotWindow._registry:
-                continue # in case window was closed during iteration
+                continue  # in case window was closed during iteration
             window = TabbedPlotWindow._registry[key]
             window.update()
         update_time = time.perf_counter() - start
