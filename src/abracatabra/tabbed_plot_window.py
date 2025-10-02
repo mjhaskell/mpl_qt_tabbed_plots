@@ -90,8 +90,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         `get_screen_size`: Returns the size of the screen in pixels.
     """
 
-    # _app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv)
-    _app = QtWidgets.QApplication(sys.argv)
+    _app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv)
     _registry: dict[str, Self] = {}
     _latest_id = None
     _count = 0
