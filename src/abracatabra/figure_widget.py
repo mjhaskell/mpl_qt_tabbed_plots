@@ -1,6 +1,7 @@
 from matplotlib.backends.qt_compat import QtWidgets
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt import NavigationToolbar2QT as NavigationToolbar
+from typing import Callable
 
 
 class FigureWidget(QtWidgets.QWidget):
@@ -42,7 +43,9 @@ class FigureWidget(QtWidgets.QWidget):
 
         self.setLayout(layout)
 
-    def update_figure(self) -> None:
+        self._update_callback: Callable[[int], None] = lambda i: None
+
+    def update_figure(self, callback_idx: int = 0) -> None:
         """
         Updates the figure canvas if anything has changed. If blitting is
         enabled, it will only redraw the parts of the figure that have changed.
@@ -52,11 +55,11 @@ class FigureWidget(QtWidgets.QWidget):
         at the appropriate times AND ensure that the artists are drawn before
         calling this method.
         """
+        self._update_callback(callback_idx)
         if not self.figure.stale:
             return
         if self.blit:
             self.canvas.blit()
-            # self.canvas.blit(self.figure.bbox)
         else:
             self.canvas.draw_idle()
         self.canvas.flush_events()
@@ -69,3 +72,13 @@ class FigureWidget(QtWidgets.QWidget):
             show (bool): If True, shows the toolbar. If False, hides it.
         """
         self.toolbar.setVisible(show)
+
+    def register_callback(self, callback: Callable[[int], None]) -> None:
+        """
+        Registers a callback function for how to update the custom widget.
+
+        Args:
+            callback (Callable[[int], None]): A function for how to update the
+                figure. This is so that update timing can be managed internally.
+        """
+        self._update_callback = callback

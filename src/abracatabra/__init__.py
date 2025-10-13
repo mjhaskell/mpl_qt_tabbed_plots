@@ -42,7 +42,7 @@ def show_all_windows(tight_layout: bool = False, block: bool | None = None) -> N
     TabbedPlotWindow.show_all(tight_layout, block)
 
 
-def update_all_windows(delay_seconds: float = 0.0) -> float:
+def update_all_windows(delay_seconds: float = 0.0, callback_idx: int = 0) -> float:
     """
     Updates all open tabbed plot windows. This is similar to pyplot.pause()
     and is generally used to update the figure in a loop, e.g., an animation.
@@ -63,7 +63,7 @@ def update_all_windows(delay_seconds: float = 0.0) -> float:
     `show_all_windows()` : shows all created windows.
     `abracatabra()` : shows all created windows with a touch of magic!
     """
-    return TabbedPlotWindow.update_all(delay_seconds)
+    return TabbedPlotWindow.update_all(delay_seconds, callback_idx)
 
 
 def abracatabra(

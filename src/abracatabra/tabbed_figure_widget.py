@@ -1,7 +1,12 @@
 from matplotlib.figure import Figure
 from matplotlib.backends.qt_compat import QtWidgets
+from typing import Callable
 
 from .figure_widget import FigureWidget
+from .custom_widget import CustomWidget
+
+# from PyQt6 import QtWidgets
+# from PySide6 import QtWidgets
 
 
 class TabbedFigureWidget(QtWidgets.QTabWidget):
@@ -35,6 +40,7 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
         self.set_tab_position(position)
         self.set_tab_fontsize(fontsize)
         self._figure_widgets: dict[str, FigureWidget] = {}
+        self._custom_widgets: dict[str, CustomWidget] = {}
 
     def add_figure_tab(
         self, tab_id: str | int, blit: bool = False, include_toolbar: bool = True
@@ -62,6 +68,32 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
         self.setCurrentWidget(new_tab)  # activate tab to auto size figure
         self.setCurrentIndex(idx)  # switch back to original tab
         return new_tab.figure
+
+    def add_custom_tab(
+        self,
+        tab_id: str | int,
+        widget: QtWidgets.QWidget,
+        # update_callback: Callable[[int], None] = lambda i: None,
+    ) -> None:
+        """
+        Adds a new tab to the widget with the given title/tab_id, which
+        contains the provided custom Qt widget. Tabs are displayed in the
+        order they are added.
+
+        Args:
+            widget (QWidget): The custom Qt widget to add as a tab.
+            tab_id (str|int): The title/ID of the tab.
+        """
+        new_tab = CustomWidget(widget)
+        # new_tab.register_callback(update_callback)
+        id_ = str(tab_id)
+        if id_ in self._figure_widgets | self._custom_widgets:
+            raise ValueError(f"Tab with id '{id_}' already exists.")
+        else:
+            # self._custom_widgets[id_] = widget
+            self._custom_widgets[id_] = new_tab
+        super().addTab(new_tab, id_)
+        return
 
     def set_tab_position(self, position: str = "top") -> None:
         """

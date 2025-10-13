@@ -19,6 +19,7 @@ import matplotlib
 matplotlib.rcParams["pdf.fonttype"] = 42
 matplotlib.rcParams["ps.fonttype"] = 42
 
+from .custom_widget import CustomWidget
 from .figure_widget import FigureWidget
 from .tabbed_figure_widget import TabbedFigureWidget
 from .tab_group_container import TabGroupContainer
@@ -192,6 +193,7 @@ class TabbedPlotWindow:
             for r in range(nrows):
                 row: list[TabbedFigureWidget] = []
                 for c in range(ncols):
+                    main_layout.setColumnStretch(c, 1)
                     widget = TabbedFigureWidget(
                         autohide_tabs, tab_position, tab_fontsize
                     )
@@ -287,7 +289,36 @@ class TabbedPlotWindow:
         figure = fig_tab_widget.add_figure_tab(tab_id, blit, include_toolbar)
         return figure
 
-    def update(self) -> None:
+    def add_custom_tab(
+        self,
+        tab_id: str,
+        widget: QtWidgets.QWidget,
+        row: int = 0,
+        col: int = 0,
+    ) -> None:
+        """
+        Adds a new tab, containing the provided widget, to the window with the
+        given ID as the tab label.
+
+        Args:
+            widget (QWidget): The custom Qt widget to add as a tab.
+            tab_id (str): The ID of the tab.
+            row (int): The row index of the tab group to add the tab to.
+            col (int): The column index of the tab group to add the tab to.
+        Notes
+        -----
+        Can alternatively call `add_custom_tab` directly on a tab group:
+        ```python
+        window = TabbedPlotWindow(ncols=2)
+        tab_left = window.add_custom_tab("left", widget, row=0, col=0)
+        tab_right = window.tab_groups[0, 1].add_custom_tab("right", widget)
+        ```
+        """
+        tab_widget = self.tab_groups[row, col]
+        tab_widget.add_custom_tab(tab_id, widget)
+        return
+
+    def update(self, callback_idx: int = 0) -> None:
         """
         This will update the figure on the active (visible) tabs. Similar to
         pyplot.pause(), but for the current tab on this window. No additional
@@ -300,7 +331,9 @@ class TabbedPlotWindow:
             active_tab_idx = tabs.currentIndex()
             active_widget = tabs.widget(active_tab_idx)
             if isinstance(active_widget, FigureWidget):
-                active_widget.update_figure()
+                active_widget.update_figure(callback_idx)
+            elif isinstance(active_widget, CustomWidget):
+                active_widget.update_widget(active_tab_idx)
 
     def close_event(self, event: QtGui.QCloseEvent) -> None:
         """
@@ -427,7 +460,7 @@ class TabbedPlotWindow:
                 TabbedPlotWindow._app.exec_()  # for compatibility with Qt5
 
     @staticmethod
-    def update_all(delay_seconds: float) -> float:
+    def update_all(delay_seconds: float, callback_idx: int = 0) -> float:
         """
         Updates all created windows. This is similar to pyplot.pause() and is
         generally used to update the figure in a loop, e.g., an animation. This
@@ -449,12 +482,86 @@ class TabbedPlotWindow:
             if not key in TabbedPlotWindow._registry:
                 continue  # in case window was closed during iteration
             window = TabbedPlotWindow._registry[key]
-            window.update()
+            window.update(callback_idx)
         update_time = time.perf_counter() - start
         if TabbedPlotWindow._count > 0:
             remaining_delay = max(delay_seconds - update_time, 0.0)
             time.sleep(remaining_delay)
         return update_time
+
+    @staticmethod
+    def animate_all(
+        frames: int,
+        ts: float,
+        step: int = 1,
+        speed_scale: float = 1.0,
+        print_timing: bool = False,
+    ) -> None:
+        """
+        Animates all created windows by repeatedly calling `update_all()` in a
+        loop for the given number of frames. This is a convenience function for
+        simple animations. For this to work well, you should have already
+        registered animation callbacks for each tab that will be animated.
+
+        Args:
+            frames (int): The number of frames to animate.
+            ts (float): The time step between frames in seconds. The intention
+                is that this time step matches real time, e.g., a simulation
+                that saves data every `ts` seconds.
+            step (int): The step size between frames. For example, if you want
+                to animate every 2nd frame, set step=2. This is useful if your
+                animation is running slower than real time and you want to draw
+                batches of data between a single frame.
+            speed_scale (float): A scaling factor for the speed of the animation.
+                For example, if speed_scale=2.0, the animation will run twice as
+                fast (i.e., half the time step between frames), meaning that a
+                10 sec simulation should take 5 sec to animate.
+        """
+        if frames < 1 or step < 1:
+            raise ValueError("Frames and step must be positive integers.")
+        if ts <= 0 or speed_scale <= 0:
+            raise ValueError("Time step and speed scale must be positive values.")
+        if step / frames > 0.01:
+            print("Warning: `step` is larger than 1% of `frames`.")
+
+        start = time.perf_counter()
+        for i in range(0, frames, step):
+            t0 = time.perf_counter()
+            delay = ts * step / speed_scale
+            update_time = TabbedPlotWindow.update_all(delay, i)
+            update_time_test = time.perf_counter() - t0
+
+            if not print_timing:
+                continue
+            elapsed = time.perf_counter() - start
+            print(
+                f"animation time: {i*ts:.2f}s",
+                f"real time: {elapsed:.2f}s",
+                f"diff: {update_time_test - update_time:.4f}s",
+                sep=" | ",
+                end="\r",
+            )
+        # Ensure the final frame is drawn
+        TabbedPlotWindow.update_all(0.0, frames)
+
+        if print_timing:
+            print()  # newline after final frame printout
+
+        real_time = time.perf_counter() - start
+        sim_time = frames * ts
+        actual_speed_scale = sim_time / real_time
+        buffer_percent = 10.0
+        percent_error = (speed_scale - actual_speed_scale) / speed_scale * 100.0
+        if percent_error > buffer_percent:
+            print("Your computer is not keeping up with the requested speeds!")
+            print(f"Tried to run at {speed_scale:.1f}x speed,", end=" ")
+            print(f"but actual speed was {actual_speed_scale:.1f}x.")
+            if speed_scale > 1.0:
+                print("Try decreasing 'speed_scale' or increasing 'step'")
+            else:
+                print("Try increasing 'step'")
+
+        TabbedPlotWindow.show_all()  # keep windows open until manually closed
 
     @staticmethod
     def get_screen_size() -> tuple[int, int]:
