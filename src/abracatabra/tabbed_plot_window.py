@@ -64,7 +64,7 @@ icon_files = ["tabplot.svg", f"abracatabra{random.choice([1, 2, 3])}.svg"]
 icon_paths = [os.path.join(icon_dir, icon) for icon in icon_files]
 
 
-class TabbedPlotWindow(QtWidgets.QMainWindow):
+class TabbedPlotWindow:
     """
     A class to create a tabbed plot window where the tabs are matplotlib
     figures. The window can also be divided into multiple tab groups, each
@@ -171,13 +171,14 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         """
         if hasattr(self, "id"):
             return
-        super().__init__()
+        # super().__init__()
+        self.qt = QtWidgets.QMainWindow()
         self.id = str(self._latest_id)
-        self.setWindowTitle(f"Plot Window: {self.id}")
+        self.qt.setWindowTitle(f"Plot Window: {self.id}")
         self.set_size(size)
-        self.setWindowIcon(TabbedPlotWindow._icon1)
+        self.qt.setWindowIcon(TabbedPlotWindow._icon1)
         main_widget = QtWidgets.QWidget()
-        self.setCentralWidget(main_widget)
+        self.qt.setCentralWidget(main_widget)
 
         row_major = True
         tab_groups = []
@@ -238,11 +239,16 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
                     vlayout.addWidget(widget)
                 tab_groups.append(col)
                 main_layout.addWidget(widget_col)
+        else:
+            raise ValueError("Invalid values for `nrows` and `ncols`")
         main_layout.setContentsMargins(0, 0, 0, 0)
         self.tab_groups = TabGroupContainer(tab_groups, row_major)
 
+        # Register close event handler
+        self.qt.closeEvent = self.close_event
+
         if open_window:
-            self.show()
+            self.qt.show()
 
     def add_figure_tab(
         self,
@@ -288,15 +294,15 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         time delay is added to the function, so it will return immediately after
         updating the figure.
         """
-        if not self.isVisible():
-            self.show()
+        if not self.qt.isVisible():
+            self.qt.show()
         for tabs in self.tab_groups:
             active_tab_idx = tabs.currentIndex()
             active_widget = tabs.widget(active_tab_idx)
             if isinstance(active_widget, FigureWidget):
                 active_widget.update_figure()
 
-    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
+    def close_event(self, event: QtGui.QCloseEvent) -> None:
         """
         Qt event function - DO NOT CALL DIRECTLY.
 
@@ -305,11 +311,11 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         open. If not, it will exit the application.
         """
         event.accept()
-        super().closeEvent(event)
+        # self.qt.closeEvent(event)
         del TabbedPlotWindow._registry[self.id]
         TabbedPlotWindow._count -= 1
-        if TabbedPlotWindow._count == 0:
-            self._app.quit()
+        # if TabbedPlotWindow._count == 0:
+        #     self._app.quit()
 
     def set_size(self, size: tuple[int | float, int | float]) -> None:
         """
@@ -324,7 +330,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
         width, height = size
         if width <= 0 or height <= 0:
             raise ValueError(f"Invalid size: {size}. Values must be positive.")
-        screen_size = self.screen().size()
+        screen_size = self.qt.screen().size()
         screen_width, screen_height = screen_size.width(), screen_size.height()
         if isinstance(width, float):
             if width > 1.0:
@@ -336,7 +342,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
             height = int(screen_height * height)
         width = min(width, screen_width)
         height = min(height, screen_height)
-        self.resize(width, height)
+        self.qt.resize(width, height)
 
     def apply_tight_layout(self):
         """
@@ -389,7 +395,7 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
             tabs.set_tab_fontsize(fontsize)
 
     @staticmethod
-    def show_all(tight_layout: bool = True, block: bool | None = None) -> None:
+    def show_all(tight_layout: bool = False, block: bool | None = None) -> None:
         """
         Shows all created windows.
 
@@ -406,8 +412,8 @@ class TabbedPlotWindow(QtWidgets.QMainWindow):
             if not key in TabbedPlotWindow._registry:
                 continue  # in case window was closed during iteration
             window = TabbedPlotWindow._registry[key]
-            if not window.isVisible():
-                window.show()
+            if not window.qt.isVisible():
+                window.qt.show()
             if tight_layout:
                 window.apply_tight_layout()
         if block is None:

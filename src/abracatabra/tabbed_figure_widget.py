@@ -29,6 +29,7 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
         """
         super().__init__()
         tabbar = self.tabBar()
+        assert isinstance(tabbar, QtWidgets.QTabBar)
         tabbar.setAutoHide(autohide)
         tabbar.setContentsMargins(0, 0, 0, 0)
         self.set_tab_position(position)
@@ -73,13 +74,13 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
         """
         char = position[0].lower()
         if char in ["b", "s"]:
-            self.setTabPosition(QtWidgets.QTabWidget.South)  # type: ignore
+            self.setTabPosition(QtWidgets.QTabWidget.TabPosition.South)
         elif char in ["l", "w"]:
-            self.setTabPosition(QtWidgets.QTabWidget.West)  # type: ignore
+            self.setTabPosition(QtWidgets.QTabWidget.TabPosition.West)
         elif char in ["r", "e"]:
-            self.setTabPosition(QtWidgets.QTabWidget.East)  # type: ignore
+            self.setTabPosition(QtWidgets.QTabWidget.TabPosition.East)
         else:
-            self.setTabPosition(QtWidgets.QTabWidget.North)  # type: ignore
+            self.setTabPosition(QtWidgets.QTabWidget.TabPosition.North)
 
     def set_tab_fontsize(self, fontsize: int) -> None:
         """
@@ -89,6 +90,7 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
             fontsize (int): The font size to set for the tab bar.
         """
         tabbar = self.tabBar()
+        assert isinstance(tabbar, QtWidgets.QTabBar)
         font = tabbar.font()
         font.setPointSize(fontsize)
         tabbar.setFont(font)

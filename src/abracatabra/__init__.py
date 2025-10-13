@@ -90,7 +90,7 @@ def abracatabra(
     if verbose:
         print("Abracatabra! 🪄✨")
     for window in TabbedPlotWindow._registry.values():
-        window.setWindowIcon(window._icon2)
+        window.qt.setWindowIcon(window._icon2)
     TabbedPlotWindow.show_all(tight_layout, block)
 
 
