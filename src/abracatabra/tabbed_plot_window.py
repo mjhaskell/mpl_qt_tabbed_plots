@@ -4,6 +4,7 @@ import sys
 import os
 import time
 import random
+from typing import Callable
 
 if sys.version_info < (3, 11):
     from typing_extensions import Self
@@ -78,6 +79,9 @@ class TabbedPlotWindow:
             tab group in the first row and first column.
     Methods:
         `add_figure_tab`: Method to add a new figure tab to the window.
+        `add_custom_tab`: Method to add a new custom widget tab to the window.
+        `register_animation_callback`: Method to register a callback function for
+            how to update the figure or custom widget in a tab.
         `update`: Method to update the figure on the active tab.
         `set_size`: Method to set the size of the window in either pixels or a
             percentage of the screen.
@@ -291,14 +295,14 @@ class TabbedPlotWindow:
 
     def add_custom_tab(
         self,
-        tab_id: str,
         widget: QtWidgets.QWidget,
+        tab_id: str | int,
         row: int = 0,
         col: int = 0,
     ) -> None:
         """
         Adds a new tab, containing the provided widget, to the window with the
-        given ID as the tab label.
+        given ID as the tab label. The ID must be unique within the tab group.
 
         Args:
             widget (QWidget): The custom Qt widget to add as a tab.
@@ -315,7 +319,28 @@ class TabbedPlotWindow:
         ```
         """
         tab_widget = self.tab_groups[row, col]
-        tab_widget.add_custom_tab(tab_id, widget)
+        tab_widget.add_custom_tab(widget, tab_id)
+        return
+
+    def register_animation_callback(
+        self, callback: Callable[[int], None], tab_id: str, row: int = 0, col: int = 0
+    ) -> None:
+        """
+        Registers a callback function for how to update the figure or the custom
+        widget in the specified tab during an animation.
+
+        Args:
+            tab_id (str): The ID/title of the tab.
+            callback (Callable[[int], None]): A function specifying how to update
+                the widget. The function should take a single integer argument,
+                which is the index of the current frame in the animation to draw.
+                Registering callbacks allows abracatabra to better manage the
+                timing of updates.
+            row (int): The row index of the tab group containing the tab.
+            col (int): The column index of the tab group containing the tab.
+        """
+        tab_widget = self.tab_groups[row, col][tab_id]
+        tab_widget.register_animation_callback(callback)
         return
 
     def update(self, callback_idx: int = 0) -> None:
@@ -496,6 +521,7 @@ class TabbedPlotWindow:
         step: int = 1,
         speed_scale: float = 1.0,
         print_timing: bool = False,
+        hold: bool = True,
     ) -> None:
         """
         Animates all created windows by repeatedly calling `update_all()` in a
@@ -516,6 +542,13 @@ class TabbedPlotWindow:
                 For example, if speed_scale=2.0, the animation will run twice as
                 fast (i.e., half the time step between frames), meaning that a
                 10 sec simulation should take 5 sec to animate.
+            print_timing (bool): If True, prints timing information for each frame,
+                inluding the running animation time and wall time. Also prints hints
+                after the animation is done on how to improve performance if the
+                animation is running slower than real time.
+            hold (bool): Specify whether to keep the windows open (blocking code)
+                at the last frame when the animation is complete. Essentially
+                whether to call `show_all()` at the end or not.
         """
         if frames < 1 or step < 1:
             raise ValueError("Frames and step must be positive integers.")
@@ -526,23 +559,21 @@ class TabbedPlotWindow:
 
         start = time.perf_counter()
         for i in range(0, frames, step):
-            t0 = time.perf_counter()
             delay = ts * step / speed_scale
-            update_time = TabbedPlotWindow.update_all(delay, i)
-            update_time_test = time.perf_counter() - t0
+            TabbedPlotWindow.update_all(delay, i)
 
             if not print_timing:
                 continue
+
             elapsed = time.perf_counter() - start
             print(
                 f"animation time: {i*ts:.2f}s",
                 f"real time: {elapsed:.2f}s",
-                f"diff: {update_time_test - update_time:.4f}s",
                 sep=" | ",
                 end="\r",
             )
         # Ensure the final frame is drawn
-        TabbedPlotWindow.update_all(0.0, frames)
+        TabbedPlotWindow.update_all(0.0, frames - 1)
 
         if print_timing:
             print()  # newline after final frame printout
@@ -561,7 +592,8 @@ class TabbedPlotWindow:
             else:
                 print("Try increasing 'step'")
 
-        TabbedPlotWindow.show_all()  # keep windows open until manually closed
+        if hold:
+            TabbedPlotWindow.show_all()
 
     @staticmethod
     def get_screen_size() -> tuple[int, int]:

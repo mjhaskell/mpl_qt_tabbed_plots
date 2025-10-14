@@ -54,6 +54,12 @@ class FigureWidget(QtWidgets.QWidget):
         user must call `canvas.copy_from_bbox()` and `canvas.restore_region()`
         at the appropriate times AND ensure that the artists are drawn before
         calling this method.
+
+        Args:
+            callback_idx (int): An index passed to the registered animation
+                callback function. This index is intended to specify which frame
+                of the animation to draw, if an animation callback has been
+                registered.
         """
         self._update_callback(callback_idx)
         if not self.figure.stale:
@@ -73,12 +79,18 @@ class FigureWidget(QtWidgets.QWidget):
         """
         self.toolbar.setVisible(show)
 
-    def register_callback(self, callback: Callable[[int], None]) -> None:
+    def register_animation_callback(self, callback: Callable[[int], None]) -> None:
         """
-        Registers a callback function for how to update the custom widget.
+        Registers a callback function for how to update the figure during an
+        animation. Note that if the figure has multiple axes or artists, the
+        user is responsible for managing the updates to all of those objects in
+        the callback function (callback is per figure not per axis/artist).
 
         Args:
-            callback (Callable[[int], None]): A function for how to update the
-                figure. This is so that update timing can be managed internally.
+            callback (Callable[[int], None]): A function specifying how to update
+                the widget. The function should take a single integer argument,
+                which is the index of the current frame in the animation to draw.
+                Registering callbacks allows abracatabra to better manage the
+                timing of updates.
         """
         self._update_callback = callback

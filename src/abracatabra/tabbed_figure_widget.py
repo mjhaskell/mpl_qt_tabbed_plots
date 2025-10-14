@@ -1,12 +1,8 @@
 from matplotlib.figure import Figure
 from matplotlib.backends.qt_compat import QtWidgets
-from typing import Callable
 
 from .figure_widget import FigureWidget
 from .custom_widget import CustomWidget
-
-# from PyQt6 import QtWidgets
-# from PySide6 import QtWidgets
 
 
 class TabbedFigureWidget(QtWidgets.QTabWidget):
@@ -16,6 +12,8 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
 
     Methods:
         `add_figure_tab`: Adds a new tab with a matplotlib Figure.
+        `add_custom_tab`: Adds a new tab with a custom Qt widget.
+        `get_tab`: Returns the widget associated with a given tab ID.
         `set_tab_position`: Sets the position of the tab bar.
         `set_tab_fontsize`: Sets the font size of the tab bar.
     """
@@ -41,6 +39,12 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
         self.set_tab_fontsize(fontsize)
         self._figure_widgets: dict[str, FigureWidget] = {}
         self._custom_widgets: dict[str, CustomWidget] = {}
+
+    def __getitem__(self, tab_id: str | int) -> FigureWidget | CustomWidget:
+        """
+        Provides dictionary-like access to tabs by their ID for convenience.
+        """
+        return self.get_tab(tab_id)
 
     def add_figure_tab(
         self, tab_id: str | int, blit: bool = False, include_toolbar: bool = True
@@ -71,9 +75,8 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
 
     def add_custom_tab(
         self,
-        tab_id: str | int,
         widget: QtWidgets.QWidget,
-        # update_callback: Callable[[int], None] = lambda i: None,
+        tab_id: str | int,
     ) -> None:
         """
         Adds a new tab to the widget with the given title/tab_id, which
@@ -84,16 +87,32 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
             widget (QWidget): The custom Qt widget to add as a tab.
             tab_id (str|int): The title/ID of the tab.
         """
-        new_tab = CustomWidget(widget)
-        # new_tab.register_callback(update_callback)
         id_ = str(tab_id)
         if id_ in self._figure_widgets | self._custom_widgets:
             raise ValueError(f"Tab with id '{id_}' already exists.")
-        else:
-            # self._custom_widgets[id_] = widget
-            self._custom_widgets[id_] = new_tab
+        new_tab = CustomWidget(widget)
+        self._custom_widgets[id_] = new_tab
         super().addTab(new_tab, id_)
         return
+
+    def get_tab(self, tab_id: str | int) -> FigureWidget | CustomWidget:
+        """
+        Returns the widget associated with the given tab ID.
+
+        Args:
+            tab_id (str|int): The title/ID of the tab.
+
+        Returns:
+            widget (FigureWidget | CustomWidget): The widget associated with the
+                given tab ID.
+        """
+        id_ = str(tab_id)
+        if id_ in self._figure_widgets:
+            return self._figure_widgets[id_]
+        elif id_ in self._custom_widgets:
+            return self._custom_widgets[id_]
+        else:
+            raise ValueError(f"Tab with id '{id_}' does not exist.")
 
     def set_tab_position(self, position: str = "top") -> None:
         """

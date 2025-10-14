@@ -40,11 +40,11 @@ Optional dependency installations are not provided for PyQt5 or PySide2 because 
 
 ```python
 import numpy as np
-import abracatabra
+import abracatabra as tabby
 
 
-window1 = abracatabra.TabbedPlotWindow(window_id='test', ncols=2)
-window2 = abracatabra.TabbedPlotWindow(size=(500,400))
+window1 = tabby.TabbedPlotWindow(window_id="README example", ncols=2)
+window2 = tabby.TabbedPlotWindow(size=(500, 400))
 
 # data
 t = np.arange(0, 10, 0.001)
@@ -52,39 +52,42 @@ ysin = np.sin(t)
 ycos = np.cos(t)
 
 
-fig = window1.add_figure_tab("sin", col=0)
-ax = fig.add_subplot()
-line1, = ax.plot(t, ysin, '--')
-ax.set_xlabel('time')
-ax.set_ylabel('sin(t)')
-ax.set_title('Plot of sin(t)')
+f = window1.add_figure_tab("sin", col=0)
+ax = f.add_subplot()
+(line1,) = ax.plot(t, ysin, "--")
+ax.set_xlabel("time")
+ax.set_ylabel("sin(t)")
+ax.set_title("Plot of sin(t)")
 
-fig = window1.add_figure_tab("time", col=1)
-ax = fig.add_subplot()
+f = window1.add_figure_tab("time", col=1)
+ax = f.add_subplot()
 ax.plot(t, t)
-ax.set_xlabel('time')
-ax.set_ylabel('t')
-ax.set_title('Plot of t')
+ax.set_xlabel("time")
+ax.set_ylabel("t")
+ax.set_title("Plot of t")
 
 window1.apply_tight_layout()
 
-fig = window2.add_figure_tab("cos")
-ax = fig.add_subplot()
-line2, = ax.plot(t, ycos, '--')
-ax.set_xlabel('time')
-ax.set_ylabel('cos(t)')
-ax.set_title('Plot of cos(t)')
+f = window2.add_figure_tab("cos")
+ax = f.add_subplot()
+(line2,) = ax.plot(t, ycos, "--")
+ax.set_xlabel("time")
+ax.set_ylabel("cos(t)")
+ax.set_title("Plot of cos(t)")
 
-fig = window2.add_figure_tab("sin^2")
-ax = fig.add_subplot()
-ax.plot(t, ysin**2)
-ax.set_xlabel('time')
-ax.set_ylabel('t')
-ax.set_title('Plot of t', fontsize=20)
+f = window2.add_figure_tab("time")
+ax = f.add_subplot()
+ax.plot(t, t)
+ax.set_xlabel("time")
+ax.set_ylabel("t")
+ax.set_title("Plot of t", fontsize=20)
 
 window2.apply_tight_layout()
 
-# animate
+
+### animate
+
+## option 1
 dt = 0.1
 for k in range(100):
     t += dt
@@ -92,9 +95,39 @@ for k in range(100):
     line1.set_ydata(ysin)
     ycos = np.cos(t)
     line2.set_ydata(ycos)
-    abracatabra.update_all_windows(0.01)
 
-abracatabra.abracatabra()
+    # For timing to be accurate, you would have to calculate how long it took to
+    # run the previous 5 lines and subtract that from dt
+    tabby.update_all_windows(dt)
+
+# You would need this to keep windows open if not in an interactive environment
+# tabby.show_all_windows(block=True)
+
+
+## option 2: use animation callbacks
+print("Same thing, but using animation callbacks now")
+
+
+def update_sin(frame: int):
+    time = t + frame * dt
+    line1.set_ydata(np.sin(time))
+
+
+def update_cos(frame: int):
+    time = t + frame * dt
+    line2.set_ydata(np.cos(time))
+
+
+window1.tab_groups[0, 0].get_tab("sin").register_animation_callback(update_sin)
+window2.tab_groups[0, 0].get_tab("cos").register_animation_callback(update_cos)
+
+# This method accounts for how long it takes to call the animation callbacks
+# so that the time between frames is closer to the specified time step. Also,
+# if a tab is not active (visible), it will not call the animation callback
+# for that tab, which can save a lot of time if you have many tabs.
+tabby.animate_all_windows(frames=100, ts=dt, print_timing=True, hold=False)
+
+tabby.abracatabra()  # keep windows open if not in an interactive environment
 ```
 
 ### Example using blitting
@@ -106,34 +139,38 @@ import abracatabra
 
 blit = True
 window = abracatabra.TabbedPlotWindow(autohide_tabs=True)
-fig = window.add_figure_tab("robot arm animation", include_toolbar=False,
-                            blit=blit)
+fig = window.add_figure_tab("robot arm animation", include_toolbar=False, blit=blit)
 ax = fig.add_subplot()
 
 # background elements
 fig.tight_layout()
-ax.set_aspect('equal', 'box')
+ax.set_aspect("equal", "box")
 length = 1.0
 lim = 1.25 * length
 ax.axis((-lim, lim, -lim, lim))
-baseline, = ax.plot([0, length], [0, 0], 'k--')
+(baseline,) = ax.plot([0, length], [0, 0], "k--")
 
 # draw and save background for fast rendering
 fig.canvas.draw()
 background = fig.canvas.copy_from_bbox(ax.bbox)
 
+
 # moving elements
 def get_arm_endpoints(theta):
-    x = np.array([0, length*np.cos(theta)])
-    y = np.array([0, length*np.sin(theta)])
+    x = np.array([0, length * np.cos(theta)])
+    y = np.array([0, length * np.sin(theta)])
     return x, y
 
-theta_hist = np.sin(np.linspace(0, 10, 501))
+
+time = np.linspace(0, 10, 501)
+theta_hist = np.sin(time)
 x, y = get_arm_endpoints(theta_hist[0])
-arm_line, = ax.plot(x, y, linewidth=5, color='blue')
+(arm_line,) = ax.plot(x, y, linewidth=5, color="blue")
+
 
 # animate
-for theta in theta_hist:
+def animation_step(idx: int):
+    theta = theta_hist[idx]
     x, y = get_arm_endpoints(theta)
     arm_line.set_xdata(x)
     arm_line.set_ydata(y)
@@ -142,8 +179,8 @@ for theta in theta_hist:
         fig.canvas.restore_region(background)
         ax.draw_artist(arm_line)
 
-    abracatabra.update_all_windows(0.01)
 
-# keep window open
-abracatabra.abracatabra()
+dt = time[1] - time[0]
+window.register_animation_callback(animation_step, "robot arm animation")
+abracatabra.animate_all_windows(frames=len(theta_hist), ts=dt, print_timing=True)
 ```
