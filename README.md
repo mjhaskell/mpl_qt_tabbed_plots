@@ -23,17 +23,18 @@ pip install abracatabra
 ```
 
 Qt bindings are an optional dependency of the package.
-A PyQt package is required for functionality, but there is no good way to have a default optional dependency with pip...so you have to install separately or manually specify one of the following optional dependencies:
+A Python Qt package is required for functionality, but there is no good way to have a default optional dependency with pip...so you have to install separately or manually specify one of the following optional dependencies:
 
 - [qt-pyside6]
 - [qt-pyqt6]
-- [qt-pyqt5]
-- [qt-pyside2]
 
 For example, run this to install PySide6 along with this package:
 ```
 pip install "abracatabra[qt-pyside6]"
 ```
+
+**NOTE:**
+Optional dependency installations are not provided for PyQt5 or PySide2 because QT 5 has reached end of life and it is not recommended to use them.
 
 ## Usage
 
