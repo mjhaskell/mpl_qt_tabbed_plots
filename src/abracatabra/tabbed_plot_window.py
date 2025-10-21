@@ -358,7 +358,7 @@ class TabbedPlotWindow:
             if isinstance(active_widget, FigureWidget):
                 active_widget.update_figure(callback_idx)
             elif isinstance(active_widget, CustomWidget):
-                active_widget.update_widget(active_tab_idx)
+                active_widget.update_widget(callback_idx)
 
     def close_event(self, event: QtGui.QCloseEvent) -> None:
         """
