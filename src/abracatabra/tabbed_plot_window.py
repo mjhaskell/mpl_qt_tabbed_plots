@@ -353,12 +353,7 @@ class TabbedPlotWindow:
         if not self.qt.isVisible():
             self.qt.show()
         for tabs in self.tab_groups:
-            active_tab_idx = tabs.currentIndex()
-            active_widget = tabs.widget(active_tab_idx)
-            if isinstance(active_widget, FigureWidget):
-                active_widget.update_figure(callback_idx)
-            elif isinstance(active_widget, CustomWidget):
-                active_widget.update_widget(callback_idx)
+            tabs.update_active_tab(callback_idx)
 
     def close_event(self, event: QtGui.QCloseEvent) -> None:
         """

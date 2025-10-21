@@ -12,6 +12,8 @@ class FigureWidget(QtWidgets.QWidget):
     Methods:
         `update_figure`: Updates the figure canvas if anything has changed.
         `show_toolbar`: Show or hide the navigation toolbar.
+        `register_animation_callback`: Registers a callback function for how to
+            update the figure during an animation.
     """
 
     def __init__(self, blit: bool = False, include_toolbar: bool = True, parent=None):
@@ -44,6 +46,8 @@ class FigureWidget(QtWidgets.QWidget):
         self.setLayout(layout)
 
         self._update_callback: Callable[[int], None] = lambda i: None
+        self._callback_registered = False
+        self._latest_callback_idx = 0
 
     def update_figure(self, callback_idx: int = 0) -> None:
         """
@@ -61,7 +65,12 @@ class FigureWidget(QtWidgets.QWidget):
                 of the animation to draw, if an animation callback has been
                 registered.
         """
+        # Attempting to detect if the same frame as last time to avoid re-drawing
+        if self._callback_registered and callback_idx == self._latest_callback_idx:
+            # print("Skipping figure update; same frame as last time.")
+            return
         self._update_callback(callback_idx)
+        self._latest_callback_idx = callback_idx
         if not self.figure.stale:
             return
         if self.blit:
@@ -94,3 +103,4 @@ class FigureWidget(QtWidgets.QWidget):
                 timing of updates.
         """
         self._update_callback = callback
+        self._callback_registered = True

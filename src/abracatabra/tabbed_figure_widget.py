@@ -1,8 +1,13 @@
+import os
 from matplotlib.figure import Figure
-from matplotlib.backends.qt_compat import QtWidgets
+from matplotlib.backends.qt_compat import QtWidgets, QtCore
 
 from .figure_widget import FigureWidget
 from .custom_widget import CustomWidget
+
+
+# Suppress atspi accessibility warnings from Qt (started happening after using slots)
+os.environ["QT_LOGGING_RULES"] = "qt.accessibility.atspi=false"
 
 
 class TabbedFigureWidget(QtWidgets.QTabWidget):
@@ -11,6 +16,7 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
     This class inherits from QTabWidget in order to create a tabbed interface.
 
     Methods:
+        `update_active_tab`: Updates the currently active tab's widget.
         `add_figure_tab`: Adds a new tab with a matplotlib Figure.
         `add_custom_tab`: Adds a new tab with a custom Qt widget.
         `get_tab`: Returns the widget associated with a given tab ID.
@@ -39,12 +45,30 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
         self.set_tab_fontsize(fontsize)
         self._figure_widgets: dict[str, FigureWidget] = {}
         self._custom_widgets: dict[str, CustomWidget] = {}
+        self._latest_callback_idx = 0
+        self.currentChanged.connect(self._on_tab_changed)
 
     def __getitem__(self, tab_id: str | int) -> FigureWidget | CustomWidget:
         """
         Provides dictionary-like access to tabs by their ID for convenience.
         """
         return self.get_tab(tab_id)
+
+    def update_active_tab(self, callback_idx: int = 0) -> None:
+        """
+        Updates the currently active tab's widget.
+
+        Args:
+            callback_idx (int): An index passed to the registered animation
+                callback function. This index is intended to specify which frame
+                to draw.
+        """
+        self._latest_callback_idx = callback_idx
+        active_widget = self.currentWidget()
+        if isinstance(active_widget, FigureWidget):
+            active_widget.update_figure(callback_idx)
+        elif isinstance(active_widget, CustomWidget):
+            active_widget.update_widget(callback_idx)
 
     def add_figure_tab(
         self, tab_id: str | int, blit: bool = False, include_toolbar: bool = True
@@ -145,3 +169,16 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
         font = tabbar.font()
         font.setPointSize(fontsize)
         tabbar.setFont(font)
+
+    @QtCore.Slot(int)
+    def _on_tab_changed(self, index: int) -> None:
+        """
+        Slot called when the current tab is changed. This is used to make sure
+        the animation callback is called for the newly active tab.
+
+        Args:
+            index (int): The index of the newly selected tab.
+        """
+        if self._latest_callback_idx > 0:
+            # print(f"TabbedFigureWidget: switched to tab index {index}")
+            self.update_active_tab(self._latest_callback_idx)
