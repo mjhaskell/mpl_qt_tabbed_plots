@@ -14,12 +14,15 @@ else:
 from matplotlib.figure import Figure
 from matplotlib.backends.qt_compat import QtWidgets, QtGui
 
+# from PySide6 import QtWidgets, QtGui, QtCore
+
 # Fix plot font types to work in paper sumbissions (Don't use type 3 fonts)
 import matplotlib
 
 matplotlib.rcParams["pdf.fonttype"] = 42
 matplotlib.rcParams["ps.fonttype"] = 42
 
+from .animation_player import AnimationPlayer
 from .custom_widget import CustomWidget
 from .figure_widget import FigureWidget
 from .tabbed_figure_widget import TabbedFigureWidget
@@ -516,6 +519,7 @@ class TabbedPlotWindow:
         step: int = 1,
         speed_scale: float = 1.0,
         print_timing: bool = False,
+        use_player: bool = False,
         hold: bool = True,
     ) -> None:
         """
@@ -552,9 +556,31 @@ class TabbedPlotWindow:
         if step / frames > 0.01:
             print("Warning: `step` is larger than 1% of `frames`.")
 
+        delay = ts * step / speed_scale
+
+        if use_player:
+
+            def callback(frame: int):
+                TabbedPlotWindow.update_all(delay, frame)
+
+            player = AnimationPlayer(frames, callback)
+
+            while player.isVisible() and TabbedPlotWindow._count > 0:
+                if not player.paused:
+                    player.current_frame += step
+                    if player.current_frame >= frames:
+                        player.current_frame = frames - 1
+                        player.play_button.click()  # pause at the end
+                    player.slider.setValue(player.current_frame)
+                    TabbedPlotWindow.update_all(delay, player.current_frame)
+                    # player.set_frame(player.current_frame + step)
+                else:
+                    # TabbedPlotWindow.update_all(0.0, player.current_frame)
+                    TabbedPlotWindow._app.processEvents()
+            return
+
         start = time.perf_counter()
         for i in range(0, frames, step):
-            delay = ts * step / speed_scale
             TabbedPlotWindow.update_all(delay, i)
 
             if not print_timing:

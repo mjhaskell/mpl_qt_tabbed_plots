@@ -77,6 +77,7 @@ def animate_all_windows(
     step: int = 1,
     speed_scale: float = 1.0,
     print_timing: bool = False,
+    use_player: bool = False,
     hold: bool = True,
 ) -> None:
     """
@@ -109,7 +110,9 @@ def animate_all_windows(
     -----
     `update_all_windows()`: updates all open tabbed plot windows.
     """
-    TabbedPlotWindow.animate_all(frames, ts, step, speed_scale, print_timing, hold)
+    TabbedPlotWindow.animate_all(
+        frames, ts, step, speed_scale, print_timing, use_player, hold
+    )
 
 
 def abracatabra(
