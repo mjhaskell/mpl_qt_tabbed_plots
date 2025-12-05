@@ -71,7 +71,11 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
             active_widget.update_widget(callback_idx)
 
     def add_figure_tab(
-        self, tab_id: str | int, blit: bool = False, include_toolbar: bool = True
+        self,
+        tab_id: str | int,
+        blit: bool = False,
+        include_toolbar: bool = True,
+        add_animation_player: bool = False,
     ) -> Figure:
         """
         Adds a new tab to the widget with the given title/tab_id, which
@@ -85,8 +89,11 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
                 Figure in this tab.
             include_toolbar (bool): If True, includes a navigation toolbar
                 with the Figure in this tab.
+            add_animation_player (bool): Whether to include an animation player
+                widget in this tab (play, pause, etc.). Only works if animation
+                callbacks are registered.
         """
-        new_tab = FigureWidget(blit, include_toolbar)
+        new_tab = FigureWidget(blit, include_toolbar, add_animation_player)
         id_ = str(tab_id)
         if id_ in self._figure_widgets:
             return self._figure_widgets[id_].figure
@@ -101,6 +108,7 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
         self,
         widget: QtWidgets.QWidget,
         tab_id: str | int,
+        add_animation_player: bool = False,
     ) -> None:
         """
         Adds a new tab to the widget with the given title/tab_id, which
@@ -110,11 +118,14 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
         Args:
             widget (QWidget): The custom Qt widget to add as a tab.
             tab_id (str|int): The title/ID of the tab.
+            add_animation_player (bool): Whether to include an animation player
+                widget in this tab (play, pause, etc.). Only works if animation
+                callbacks are registered.
         """
         id_ = str(tab_id)
         if id_ in self._figure_widgets | self._custom_widgets:
             raise ValueError(f"Tab with id '{id_}' already exists.")
-        new_tab = CustomWidget(widget)
+        new_tab = CustomWidget(widget, add_animation_player)
         self._custom_widgets[id_] = new_tab
         super().addTab(new_tab, id_)
         return

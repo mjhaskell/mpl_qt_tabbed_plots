@@ -77,6 +77,7 @@ def animate_all_windows(
     step: int = 1,
     speed_scale: float = 1.0,
     print_timing: bool = False,
+    use_player: bool = False,
     hold: bool = True,
 ) -> None:
     """
@@ -102,6 +103,11 @@ def animate_all_windows(
             inluding the running animation time and wall time. Also prints hints
             after the animation is done on how to improve performance if the
             animation is running slower than real time.
+        use_player (bool): Specifies whether to use an animation player window
+            with media controls (play, pause, step, etc.) to control the
+            animation. If an animation player has already been added to a tab,
+            it will be used (even if `use_player` is False); otherwise, a new
+            animation player window will be created.
         hold (bool): Specify whether to keep the windows open (blocking code)
             at the last frame when the animation is complete. Essentially
             whether to call `show_all_windows()` at the end or not.
@@ -109,7 +115,9 @@ def animate_all_windows(
     -----
     `update_all_windows()`: updates all open tabbed plot windows.
     """
-    TabbedPlotWindow.animate_all(frames, ts, step, speed_scale, print_timing, hold)
+    TabbedPlotWindow.animate_all(
+        frames, ts, step, speed_scale, print_timing, use_player, hold
+    )
 
 
 def abracatabra(

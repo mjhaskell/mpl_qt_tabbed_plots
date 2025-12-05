@@ -14,12 +14,15 @@ else:
 from matplotlib.figure import Figure
 from matplotlib.backends.qt_compat import QtWidgets, QtGui
 
+# from PySide6 import QtWidgets, QtGui, QtCore
+
 # Fix plot font types to work in paper sumbissions (Don't use type 3 fonts)
 import matplotlib
 
 matplotlib.rcParams["pdf.fonttype"] = 42
 matplotlib.rcParams["ps.fonttype"] = 42
 
+from .animation_player import AnimationPlayer
 from .custom_widget import CustomWidget
 from .figure_widget import FigureWidget
 from .tabbed_figure_widget import TabbedFigureWidget
@@ -261,6 +264,7 @@ class TabbedPlotWindow:
         tab_id: str,
         blit: bool = False,
         include_toolbar: bool = True,
+        add_animation_player: bool = False,
         row: int = 0,
         col: int = 0,
     ) -> Figure:
@@ -276,6 +280,9 @@ class TabbedPlotWindow:
                 and updating individual artists.
             include_toolbar (bool): Whether to display a matplotlib toolbar with
                 the Figure in this tab.
+            add_animation_player (bool): Whether to include an animation player
+                widget in this tab (play, pause, etc.). Only works if animation
+                callbacks are registered.
             row (int): The row index of the tab group to add the tab to.
             col (int): The column index of the tab group to add the tab to.
         Returns:
@@ -290,13 +297,16 @@ class TabbedPlotWindow:
         ```
         """
         fig_tab_widget = self.tab_groups[row, col]
-        figure = fig_tab_widget.add_figure_tab(tab_id, blit, include_toolbar)
+        figure = fig_tab_widget.add_figure_tab(
+            tab_id, blit, include_toolbar, add_animation_player
+        )
         return figure
 
     def add_custom_tab(
         self,
         widget: QtWidgets.QWidget,
         tab_id: str | int,
+        add_animation_player: bool = False,
         row: int = 0,
         col: int = 0,
     ) -> None:
@@ -307,6 +317,9 @@ class TabbedPlotWindow:
         Args:
             widget (QWidget): The custom Qt widget to add as a tab.
             tab_id (str): The ID of the tab.
+            add_animation_player (bool): Whether to include an animation player
+                widget in this tab (play, pause, etc.). Only works if animation
+                callbacks are registered.
             row (int): The row index of the tab group to add the tab to.
             col (int): The column index of the tab group to add the tab to.
         Notes
@@ -319,7 +332,7 @@ class TabbedPlotWindow:
         ```
         """
         tab_widget = self.tab_groups[row, col]
-        tab_widget.add_custom_tab(widget, tab_id)
+        tab_widget.add_custom_tab(widget, tab_id, add_animation_player)
         return
 
     def register_animation_callback(
@@ -516,6 +529,7 @@ class TabbedPlotWindow:
         step: int = 1,
         speed_scale: float = 1.0,
         print_timing: bool = False,
+        use_player: bool = False,
         hold: bool = True,
     ) -> None:
         """
@@ -541,6 +555,11 @@ class TabbedPlotWindow:
                 inluding the running animation time and wall time. Also prints hints
                 after the animation is done on how to improve performance if the
                 animation is running slower than real time.
+            use_player (bool): Specifies whether to use an animation player window
+                with media controls (play, pause, step, etc.) to control the
+                animation. If an animation player has already been added to a tab,
+                it will be used (even if `use_player` is False); otherwise, a new
+                animation player window will be created.
             hold (bool): Specify whether to keep the windows open (blocking code)
                 at the last frame when the animation is complete. Essentially
                 whether to call `show_all()` at the end or not.
@@ -552,9 +571,33 @@ class TabbedPlotWindow:
         if step / frames > 0.01:
             print("Warning: `step` is larger than 1% of `frames`.")
 
+        delay = ts * step / speed_scale
+
+        player = AnimationPlayer.instance() or AnimationPlayer()
+
+        if use_player:
+
+            def callback(frame: int):
+                # TabbedPlotWindow.update_all(delay * 0.5, frame)
+                TabbedPlotWindow.update_all(0.0, frame)
+
+            # player = AnimationPlayer(frames, ts, step, callback)
+            player.setup(frames, ts, step, callback)
+            TabbedPlotWindow._app.processEvents()
+
+            while player.isVisible() and TabbedPlotWindow._count > 0:
+                start = time.perf_counter()
+                stepped = player.step_frame()
+                if not stepped:
+                    TabbedPlotWindow._app.processEvents()
+                update_time = time.perf_counter() - start
+                if TabbedPlotWindow._count > 0:
+                    remaining_delay = max(delay - update_time, 0.0)
+                    time.sleep(remaining_delay)
+            return
+
         start = time.perf_counter()
         for i in range(0, frames, step):
-            delay = ts * step / speed_scale
             TabbedPlotWindow.update_all(delay, i)
 
             if not print_timing:

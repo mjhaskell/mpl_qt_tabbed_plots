@@ -1,6 +1,8 @@
 from matplotlib.backends.qt_compat import QtWidgets
 from typing import Callable
 
+from .animation_player import AnimationPlayer
+
 
 class CustomWidget(QtWidgets.QWidget):
     """
@@ -14,12 +16,27 @@ class CustomWidget(QtWidgets.QWidget):
             update the widget during an animation.
     """
 
-    def __init__(self, widget: QtWidgets.QWidget, parent=None):
+    def __init__(
+        self, widget: QtWidgets.QWidget, add_animation_player: bool = False, parent=None
+    ):
+        """
+        Initializes the CustomWidget.
+
+        Args:
+            widget (QtWidgets.QWidget): The custom Qt widget to include.
+            add_animation_player (bool): Whether to include an animation player
+                widget in this tab (play, pause, etc.). Only works if animation
+                callbacks are registered.
+            parent: The parent widget for this widget.
+        """
         super().__init__(parent)
         layout = QtWidgets.QVBoxLayout()
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(widget, stretch=1)
+        if add_animation_player:
+            animation_player = AnimationPlayer(parent=self)
+            layout.addWidget(animation_player, stretch=0)
         self.setLayout(layout)
 
         def callback(idx: int = 0) -> None:

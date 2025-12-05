@@ -3,6 +3,8 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt import NavigationToolbar2QT as NavigationToolbar
 from typing import Callable
 
+from .animation_player import AnimationPlayer
+
 
 class FigureWidget(QtWidgets.QWidget):
     """
@@ -16,7 +18,13 @@ class FigureWidget(QtWidgets.QWidget):
             update the figure during an animation.
     """
 
-    def __init__(self, blit: bool = False, include_toolbar: bool = True, parent=None):
+    def __init__(
+        self,
+        blit: bool = False,
+        include_toolbar: bool = True,
+        add_animation_player: bool = False,
+        parent=None,
+    ):
         """
         Initializes the FigureWidget. This creates a matplotlib figure canvas
         and optionally includes a navigation toolbar.
@@ -25,6 +33,9 @@ class FigureWidget(QtWidgets.QWidget):
             blit (bool): If True, enables blitting for faster rendering.
             include_toolbar (bool): If True, includes a navigation toolbar
                 with the canvas.
+            add_animation_player (bool): Whether to include an animation player
+                widget in this tab (play, pause, etc.). Only works if animation
+                callbacks are registered.
             parent: The parent widget for this widget.
         """
         super().__init__(parent)
@@ -32,16 +43,22 @@ class FigureWidget(QtWidgets.QWidget):
         layout = QtWidgets.QVBoxLayout()
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
+
         self.canvas = FigureCanvas()
         self.figure = self.canvas.figure
         # self.figure.set_layout_engine('tight') # slows down rendering ~2x
         # self.figure.tight_layout() # does not seem to do anything here
-        layout.addWidget(self.canvas)
 
         self.toolbar = NavigationToolbar(self.canvas, self)
         self.toolbar.setMaximumHeight(25)
-        layout.addWidget(self.toolbar)
         self.toolbar.setVisible(include_toolbar)
+
+        layout.addWidget(self.canvas, stretch=1)
+        layout.addWidget(self.toolbar)
+
+        if add_animation_player:
+            animation_player = AnimationPlayer(parent=self)
+            layout.addWidget(animation_player, stretch=0)
 
         self.setLayout(layout)
 
