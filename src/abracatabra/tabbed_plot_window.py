@@ -12,9 +12,9 @@ else:
     from typing import Self
 
 from matplotlib.figure import Figure
-from matplotlib.backends.qt_compat import QtWidgets, QtGui
+from matplotlib.backends.qt_compat import QtWidgets, QtCore, QtGui
 
-# from PySide6 import QtWidgets, QtGui, QtCore
+from PySide6 import QtWidgets, QtCore, QtGui
 
 # Fix plot font types to work in paper sumbissions (Don't use type 3 fonts)
 import matplotlib
@@ -23,10 +23,10 @@ matplotlib.rcParams["pdf.fonttype"] = 42
 matplotlib.rcParams["ps.fonttype"] = 42
 
 from .animation_player import AnimationPlayer
-from .custom_widget import CustomWidget
 from .figure_widget import FigureWidget
 from .tabbed_figure_widget import TabbedFigureWidget
 from .tab_group_container import TabGroupContainer
+from . import keys
 
 # if sys.modules.get('IPython') is not None:
 try:
@@ -77,6 +77,7 @@ class TabbedPlotWindow:
 
     Attributes:
         `id`: Unique identifier for the window.
+        `qt`: The underlying Qt MainWindow object.
         `tab_groups`: A container for the tab groups in the window. Can be
             accessed like a 2D array, e.g. `window.tab_groups[0, 0]` for the
             tab group in the first row and first column.
@@ -86,6 +87,10 @@ class TabbedPlotWindow:
         `register_animation_callback`: Method to register a callback function for
             how to update the figure or custom widget in a tab.
         `update`: Method to update the figure on the active tab.
+        `get_keyboard_shortcuts_str`: Returns a string with the keyboard shortcuts
+            for the window.
+        `display_keyboard_shortcuts`: Displays a message box with the keyboard
+            shortcuts for the window.
         `set_size`: Method to set the size of the window in either pixels or a
             percentage of the screen.
         `apply_tight_layout`: Applies a tight layout to the figure in each tab.
@@ -95,6 +100,8 @@ class TabbedPlotWindow:
     Static Methods:
         `show_all`: Shows all created windows.
         `update_all`: Updates all created windows.
+        `animate_all`: Animates all created windows.
+        `close_all_windows`: Closes all created windows.
         `get_screen_size`: Returns the size of the screen in pixels.
     """
 
@@ -187,6 +194,7 @@ class TabbedPlotWindow:
         self.qt.setWindowIcon(TabbedPlotWindow._icon1)
         main_widget = QtWidgets.QWidget()
         self.qt.setCentralWidget(main_widget)
+        self.qt.keyPressEvent = self._key_press_event
 
         row_major = True
         tab_groups = []
@@ -367,6 +375,59 @@ class TabbedPlotWindow:
             self.qt.show()
         for tabs in self.tab_groups:
             tabs.update_active_tab(callback_idx)
+
+    def _key_press_event(self, event: QtGui.QKeyEvent):
+        """
+        Qt event function - DO NOT CALL DIRECTLY.
+
+        This method is called when a key is pressed while the window is in
+        focus. It will close the window if 'q' is pressed, or close all windows
+        if 'ctrl+q' is pressed.
+        """
+        player = AnimationPlayer.instance()
+
+        key_used = True
+        match event.key():
+            case keys.Key_Question:
+                self.display_keyboard_shortcuts()
+            case keys.Key_Q:
+                if event.modifiers() & keys.ControlModifier:
+                    TabbedPlotWindow.close_all_windows()
+                else:
+                    self.qt.close()
+            case _:
+                key_used = False
+
+        if not key_used and player is not None:
+            player.keyPressEvent(event)
+        else:
+            QtWidgets.QMainWindow.keyPressEvent(self.qt, event)
+
+    def get_keyboard_shortcuts_str(self) -> str:
+        help = (
+            "General Controls:\n"
+            "    q: Close focused window\n"
+            "    Ctrl+q: Close all windows\n"
+            "    ?: Show this help dialog\n\n"
+            "Tab Widget Controls:\n"
+            "    RightArrow: Focus tab to the right\n"
+            "    LeftArrow: Focus tab to the left\n"
+            "    Ctrl+Tab: Next tab\n"
+            "    Ctrl+Shift+Tab: Previous tab\n"
+            f"\n{FigureWidget.help_text}"
+        )
+        player = AnimationPlayer.instance()
+        if player is not None:
+            help += f"\n{player.help_text}"
+        return help
+
+    def display_keyboard_shortcuts(self) -> None:
+        """
+        Displays a message box with the keyboard shortcuts for the window.
+        """
+        title = "Plot Window Keyboard Shortcuts"
+        help = self.get_keyboard_shortcuts_str()
+        QtWidgets.QMessageBox.information(self.qt, title, help)
 
     def close_event(self, event: QtGui.QCloseEvent) -> None:
         """
@@ -573,15 +634,13 @@ class TabbedPlotWindow:
 
         delay = ts * step / speed_scale
 
-        player = AnimationPlayer.instance() or AnimationPlayer()
-
         if use_player:
+            player = AnimationPlayer.instance() or AnimationPlayer()
+            player.setFocus(QtCore.Qt.FocusReason.ActiveWindowFocusReason)
 
             def callback(frame: int):
-                # TabbedPlotWindow.update_all(delay * 0.5, frame)
                 TabbedPlotWindow.update_all(0.0, frame)
 
-            # player = AnimationPlayer(frames, ts, step, callback)
             player.setup(frames, ts, step, callback)
             TabbedPlotWindow._app.processEvents()
 
@@ -634,6 +693,17 @@ class TabbedPlotWindow:
             TabbedPlotWindow.show_all()
 
     @staticmethod
+    def close_all_windows() -> None:
+        """
+        Closes all created windows.
+        """
+        for key in list(TabbedPlotWindow._registry.keys()):
+            if not key in TabbedPlotWindow._registry:
+                continue  # in case window was closed elsewhere during iteration
+            window = TabbedPlotWindow._registry[key]
+            window.qt.close()
+
+    @staticmethod
     def get_screen_size() -> tuple[int, int]:
         """
         Returns the size of the screen in pixels. Tries to get the screen size
@@ -644,6 +714,7 @@ class TabbedPlotWindow:
             (width, height) (tuple[int,int]): The width and height of the screen
                 in pixels.
         """
+        assert isinstance(TabbedPlotWindow._app, QtWidgets.QApplication)
         screen = TabbedPlotWindow._app.screenAt(QtGui.QCursor.pos())
         if screen is None:
             # Fallback to primary screen if no screen is found at cursor position

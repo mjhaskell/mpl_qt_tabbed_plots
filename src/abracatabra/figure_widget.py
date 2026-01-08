@@ -1,9 +1,12 @@
-from matplotlib.backends.qt_compat import QtWidgets
+from matplotlib.backends.qt_compat import QtWidgets, QtGui
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt import NavigationToolbar2QT as NavigationToolbar
 from typing import Callable
 
 from .animation_player import AnimationPlayer
+from . import keys
+
+from PySide6 import QtWidgets
 
 
 class FigureWidget(QtWidgets.QWidget):
@@ -18,8 +21,18 @@ class FigureWidget(QtWidgets.QWidget):
             update the figure during an animation.
     """
 
+    help_text = """Figure Controls:
+    h: Home (reset view)
+    c: Back 1 view
+    v: Forward 1 view
+    p: Toggle pan mode
+    z: Toggle zoom mode
+    Ctrl+s: Save figure
+    """
+
     def __init__(
         self,
+        name: str | int = "figure",
         blit: bool = False,
         include_toolbar: bool = True,
         add_animation_player: bool = False,
@@ -30,6 +43,8 @@ class FigureWidget(QtWidgets.QWidget):
         and optionally includes a navigation toolbar.
 
         Args:
+            name (str): The name of the figure widget, used as the default
+                filename when saving the figure.
             blit (bool): If True, enables blitting for faster rendering.
             include_toolbar (bool): If True, includes a navigation toolbar
                 with the canvas.
@@ -45,6 +60,12 @@ class FigureWidget(QtWidgets.QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.canvas = FigureCanvas()
+        # override default save behavior to use pdf and custom filename
+        if isinstance(name, int):
+            name = f"figure_{name}"
+        self.canvas.get_default_filetype = lambda: "pdf"
+        self.canvas.get_default_filename = lambda: f"{name}.pdf"
+
         self.figure = self.canvas.figure
         # self.figure.set_layout_engine('tight') # slows down rendering ~2x
         # self.figure.tight_layout() # does not seem to do anything here
@@ -121,3 +142,31 @@ class FigureWidget(QtWidgets.QWidget):
         """
         self._update_callback = callback
         self._callback_registered = True
+
+    def _handle_keypress(self, event: QtGui.QKeyEvent) -> bool:
+        """
+        Forwards key press events to the figure canvas to enable keyboard
+        shortcuts for matplotlib (e.g., zoom, pan, save, etc.).
+
+        Args:
+            event (QKeyEvent): The key event.
+        Returns:
+            bool: True if the key event was handled, False otherwise.
+        """
+        match event.key():
+            case keys.Key_P:
+                self.toolbar.pan()
+            case keys.Key_H:
+                self.toolbar.home()
+            case keys.Key_Z:
+                self.toolbar.zoom()
+            case keys.Key_C:
+                self.toolbar.back()
+            case keys.Key_V:
+                self.toolbar.forward()
+            case keys.Key_S:
+                if event.modifiers() & keys.ControlModifier:
+                    self.toolbar.save_figure()
+            case _:
+                return False
+        return True

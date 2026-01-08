@@ -1,6 +1,6 @@
 import os
 from matplotlib.figure import Figure
-from matplotlib.backends.qt_compat import QtWidgets, QtCore
+from matplotlib.backends.qt_compat import QtWidgets, QtCore, QtGui
 
 from .figure_widget import FigureWidget
 from .custom_widget import CustomWidget
@@ -47,6 +47,22 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
         self._custom_widgets: dict[str, CustomWidget] = {}
         self._latest_callback_idx = 0
         self.currentChanged.connect(self._on_tab_changed)
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+
+    def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
+        """
+        Overrides the keyPressEvent to forward key events to the currently
+        active tab's widget.
+
+        Args:
+            event (QKeyEvent): The key event.
+        """
+        active_widget = self.currentWidget()
+        if isinstance(active_widget, FigureWidget):
+            keypress_used = active_widget._handle_keypress(event)
+            if keypress_used:
+                return
+        super().keyPressEvent(event)
 
     def __getitem__(self, tab_id: str | int) -> FigureWidget | CustomWidget:
         """
@@ -93,10 +109,10 @@ class TabbedFigureWidget(QtWidgets.QTabWidget):
                 widget in this tab (play, pause, etc.). Only works if animation
                 callbacks are registered.
         """
-        new_tab = FigureWidget(blit, include_toolbar, add_animation_player)
         id_ = str(tab_id)
         if id_ in self._figure_widgets:
             return self._figure_widgets[id_].figure
+        new_tab = FigureWidget(tab_id, blit, include_toolbar, add_animation_player)
         self._figure_widgets[id_] = new_tab
         idx = self.currentIndex()
         super().addTab(new_tab, id_)

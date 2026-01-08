@@ -1,5 +1,9 @@
 from typing import Callable, Optional, Self
-from matplotlib.backends.qt_compat import QtCore, QtWidgets
+from matplotlib.backends.qt_compat import QtWidgets, QtCore, QtGui
+
+from . import keys
+
+from PySide6 import QtWidgets, QtCore, QtGui
 
 
 class AnimationPlayer(QtWidgets.QWidget):
@@ -9,9 +13,30 @@ class AnimationPlayer(QtWidgets.QWidget):
     player controls (play/pause, step forward/backward, jump to start/end). It
     controls all windows within the application that have registered animation
     callbacks.
+
+    Methods:
+        `setup`: Sets up the animation player with the given parameters.
+        `step_frame`: Steps the animation forward by one step if not paused.
+    Static Methods:
+        `instance`: Returns the singleton instance of the AnimationPlayer.
     """
 
     _instance: Optional[Self] = None
+    help_text = """Animation Player Controls:
+    Space: Play/Pause
+    Home: Restart
+    End: Go to last frame
+    LeftArrow: Step back 1 frame
+    RightArrow: Step forward 1 frame
+    Ctrl+LeftArrow: Jump back
+    Ctrl+RightArrow: Jump forward
+
+    Media_Play/Pause: Play/Pause
+    Media_Previous: Jump back
+    Media_Next: Jump forward
+    Ctrl+Media_Previous: Step back 1 frame
+    Ctrl+Media_Next: Step forward 1 frame
+    """
 
     def __init__(self, parent: Optional[QtWidgets.QWidget] = None):
         """
@@ -162,6 +187,46 @@ class AnimationPlayer(QtWidgets.QWidget):
             self.show()
             self.raise_()
             self.adjustSize()
+
+        # allow focus from clicks and tabbing
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+
+    def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
+        modifier = keys.ControlModifier
+        match event.key():
+            case (
+                keys.Key_Space
+                | keys.Key_MediaTogglePlayPause
+                | keys.Key_MediaPlay
+                | keys.Key_MediaPause
+            ):
+                self.play_button.click()
+            case keys.Key_Home:
+                self.restart_button.click()
+            case keys.Key_End:
+                self.end_button.click()
+            case keys.Key_Left:
+                if event.modifiers() & modifier:
+                    self.jump_back_button.click()
+                else:
+                    self.prev_button.click()
+            case keys.Key_Right:
+                if event.modifiers() & modifier:
+                    self.jump_forward_button.click()
+                else:
+                    self.next_button.click()
+            case keys.Key_MediaPrevious:
+                if event.modifiers() & modifier:
+                    self.prev_button.click()
+                else:
+                    self.jump_back_button.click()
+            case keys.Key_MediaNext:
+                if event.modifiers() & modifier:
+                    self.next_button.click()
+                else:
+                    self.jump_forward_button.click()
+            case _:
+                super().keyPressEvent(event)
 
     def setup(
         self,
