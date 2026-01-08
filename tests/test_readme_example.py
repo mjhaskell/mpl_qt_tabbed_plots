@@ -35,6 +35,8 @@ def test_readme_example():
     ax.set_title("Plot of cos(t)")
 
     fig = window2.add_figure_tab("sin^2")
+    fig_test = window2.add_figure_tab("sin^2")
+    assert fig is fig_test
     ax = fig.add_subplot()
     ax.plot(t, ysin**2)
     ax.set_xlabel("time")
