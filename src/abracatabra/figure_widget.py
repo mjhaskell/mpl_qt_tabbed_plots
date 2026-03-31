@@ -6,8 +6,6 @@ from typing import Callable
 from .animation_player import AnimationPlayer
 from . import keys
 
-from PySide6 import QtWidgets
-
 
 class FigureWidget(QtWidgets.QWidget):
     """

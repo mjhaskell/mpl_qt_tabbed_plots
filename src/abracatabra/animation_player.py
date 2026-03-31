@@ -1,9 +1,13 @@
-from typing import Callable, Optional, Self
+from typing import Callable, Optional
 from matplotlib.backends.qt_compat import QtWidgets, QtCore, QtGui
+import sys
+
+if sys.version_info < (3, 11):
+    from typing_extensions import Self
+else:
+    from typing import Self
 
 from . import keys
-
-from PySide6 import QtWidgets, QtCore, QtGui
 
 
 class AnimationPlayer(QtWidgets.QWidget):

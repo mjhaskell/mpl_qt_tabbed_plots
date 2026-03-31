@@ -14,8 +14,6 @@ else:
 from matplotlib.figure import Figure
 from matplotlib.backends.qt_compat import QtWidgets, QtCore, QtGui
 
-from PySide6 import QtWidgets, QtCore, QtGui
-
 # Fix plot font types to work in paper sumbissions (Don't use type 3 fonts)
 import matplotlib
 
